@@ -1,291 +1,88 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>6502 IDE — L'Archéogeek</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chuck IDE — L'Atelier 8-Bit</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 </head>
 <body>
 
-<div id="app">
+  <div id="app">
 
-  <!-- ── TITLE BAR ─────────────────────────────────────────── -->
-  <div id="titlebar">
-    <div class="tl-lights">
-      <span class="tl-close"></span>
-      <span class="tl-min"></span>
-      <span class="tl-max"></span>
-    </div>
-
-    <span class="titlebar-logo">⬡ L'ARCHÉOGEEK</span>
-
-    <span class="titlebar-file">programme.asm</span>
-
-    <div class="titlebar-actions">
-      <button class="titlebar-pill" id="btn-show-screen" title="Afficher l'écran">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-        Écran
-      </button>
-      <button class="titlebar-pill" id="btn-show-debug" title="Afficher le débogueur">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        Débogueur
-      </button>
-    </div>
-  </div>
-
-  <!-- ── MAIN ──────────────────────────────────────────────── -->
-  <div id="main">
-
-    <!-- ── TOOLBAR (gauche) ─────────────────────────────────── -->
-    <div id="toolbar">
-
-      <!-- Assembler -->
-      <button class="tb-btn assemble" id="btn-assemble" title="Assembler">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M12 3L3 8l9 5 9-5-9-5z"/>
-          <path d="M3 13l9 5 9-5"/>
-          <path d="M3 18l9 5 9-5"/>
-        </svg>
-        <span class="tb-label">Assembler</span>
-      </button>
-
-      <div class="tb-sep"></div>
-
-      <!-- Run / Stop -->
-      <button class="tb-btn run" id="btn-run" title="Exécuter" disabled>
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="5,3 19,12 5,21"/>
-        </svg>
-        <span class="tb-label">Run</span>
-      </button>
-
-      <!-- Step -->
-      <button class="tb-btn step" id="btn-step" title="Pas à pas" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <polyline points="13 17 18 12 13 7"/>
-          <line x1="6" y1="12" x2="18" y2="12"/>
-        </svg>
-        <span class="tb-label">Étape</span>
-      </button>
-
-      <div class="tb-sep"></div>
-
-      <!-- Reset -->
-      <button class="tb-btn reset" id="btn-reset" title="Réinitialiser" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <polyline points="1 4 1 10 7 10"/>
-          <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
-        </svg>
-        <span class="tb-label">Reset</span>
-      </button>
-
-      <div class="tb-sep"></div>
-
-      <!-- Hexdump -->
-      <button class="tb-btn hexdump" id="btn-hexdump" title="Hexdump mémoire" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <path d="M3 9h18M3 15h18M9 3v18"/>
-        </svg>
-        <span class="tb-label">Hexdump</span>
-      </button>
-
-      <!-- Désassembler -->
-      <button class="tb-btn disasm" id="btn-disasm" title="Désassembler" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <polyline points="16 18 22 12 16 6"/>
-          <polyline points="8 6 2 12 8 18"/>
-        </svg>
-        <span class="tb-label">Disasm</span>
-      </button>
-
-      <div class="tb-sep"></div>
-
-      <!-- Debug toggle -->
-      <label class="tb-debug" title="Mode debug pas à pas">
-        <input type="checkbox" id="chk-debug">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px">
-          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-          <path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 3"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        <span>Debug</span>
-      </label>
-
-      <!-- Speed -->
-      <div class="tb-speed">
-        <span>Vitesse</span>
-        <input type="range" id="speed-slider" min="1" max="100" value="50" title="Vitesse d'exécution">
-        <span class="tb-speed-val" id="speed-val">50%</span>
+    <!-- ── Title bar ───────────────────────────────────────── -->
+    <header id="titlebar">
+      <div class="tl-lights">
+        <span class="tl-close"></span>
+        <span class="tl-min"></span>
+        <span class="tl-max"></span>
       </div>
-
-    </div><!-- /toolbar -->
-
-    <!-- ── EDITOR WRAP ──────────────────────────────────────── -->
-    <div id="editor-wrap">
-
-      <!-- Tab bar -->
-      <div class="tab-bar">
-        <div class="tab active">
-          <span class="tab-dot"></span>
-          programme.asm
-        </div>
+      <span class="titlebar-logo">⬡ CHUCK IDE</span>
+      <span class="titlebar-file" id="titlebar-file">untitled.asm</span>
+      <div class="titlebar-actions">
+        <button class="titlebar-pill" id="btn-show-display" title="Écran">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          Écran
+        </button>
+        <button class="titlebar-pill" id="btn-show-registers" title="Registres">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Registres
+        </button>
+        <button class="titlebar-pill" id="btn-show-memory" title="Mémoire">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M3 15h18M9 3v18"/>
+          </svg>
+          Mémoire
+        </button>
       </div>
+    </header>
 
-      <!-- Code editor -->
-      <textarea id="code-editor" spellcheck="false" autocorrect="off" autocapitalize="off"
-        placeholder="; Écrivez votre programme 6502 ici…
-; LDA #$01    charger la valeur 1 dans A
-; STA $0200   écrire à l'écran (pixel 0,0)
-; BRK         fin du programme"
-      >; 6502 — Remplissage aléatoire (L'Archéogeek)
-; Mémoire $0200-$05FF → écran 32×32 pixels
-; $FE = octet aléatoire   |   $FF = dernière touche
+    <!-- ── Main workspace ──────────────────────────────────── -->
+    <div id="workspace">
 
-  LDX #$00       ; index pixel = 0
+      <!-- Left toolbar -->
+      <chuck-toolbar id="toolbar"></chuck-toolbar>
 
-loop:
-  LDA $FE        ; lire couleur aléatoire
-  STA $0200,X    ; écrire pixel (ligne 0)
-  STA $0300,X    ; écrire pixel (ligne 1)
-  STA $0400,X    ; écrire pixel (ligne 2)
-  STA $0500,X    ; écrire pixel (ligne 3)
-  INX            ; pixel suivant
-  CPX #$00       ; retour à 0 après 256 ?
-  BNE loop       ; sinon continuer
-  BRK            ; fin</textarea>
+      <!-- Editor (CodeMirror) -->
+      <chuck-editor id="editor"></chuck-editor>
 
       <!-- Console -->
-      <div id="console">
-        <div class="console-header">
-          <span class="console-title">Console</span>
-          <button class="console-clear" id="console-clear" title="Effacer la console">Effacer</button>
-        </div>
-        <div id="console-output"></div>
-      </div>
+      <chuck-console id="console-panel"></chuck-console>
 
-    </div><!-- /editor-wrap -->
+    </div>
 
-  </div><!-- /main -->
-
-  <!-- ── STATUS BAR ────────────────────────────────────────── -->
-  <div id="statusbar">
-    <span class="sb-state" id="sb-state">Prêt</span>
-    <span class="sb-sep">|</span>
-    <span>MOS 6502</span>
-    <span class="sb-sep">|</span>
-    <span id="sb-pc">$0600</span>
-    <div class="sb-right">
-      <span class="sb-cursor" id="sb-cursor">Ln 1  Col 1</span>
+    <!-- ── Status bar ──────────────────────────────────────── -->
+    <footer id="statusbar">
+      <span class="sb-state" id="sb-state">Prêt</span>
       <span class="sb-sep">|</span>
-      <span>ASM</span>
+      <span>MOS 6502</span>
       <span class="sb-sep">|</span>
-      <span>UTF-8</span>
-    </div>
+      <span id="sb-pc">$0600</span>
+      <div class="sb-right">
+        <span id="sb-cursor">Ln 1  Col 1</span>
+        <span class="sb-sep">|</span>
+        <span>ASM</span>
+        <span class="sb-sep">|</span>
+        <span>UTF-8</span>
+      </div>
+    </footer>
+
   </div>
 
-</div><!-- /app -->
+  <!-- ── Floating modals ─────────────────────────────────── -->
+  <chuck-display   id="modal-display"   style="top:80px; left:120px;"></chuck-display>
+  <chuck-registers id="modal-registers" style="top:80px; left:450px;"></chuck-registers>
+  <chuck-memory-dump id="modal-memory"  style="top:80px; left:800px;"></chuck-memory-dump>
 
-
-<!-- ── MODAL : ÉCRAN ─────────────────────────────────────────── -->
-<div class="modal" id="modal-screen" style="top: 80px; left: 120px;">
-  <div class="modal-bar">
-    <span class="modal-bar-title">Écran — 32 × 32</span>
-    <span class="ph-live" id="live-indicator">● LIVE</span>
-    <button class="modal-close" title="Fermer">✕</button>
-  </div>
-  <div class="modal-body">
-    <canvas id="screen" width="256" height="256"></canvas>
-  </div>
-  <div class="modal-resize"></div>
-</div>
-
-
-<!-- ── MODAL : DÉBOGUEUR ─────────────────────────────────────── -->
-<div class="modal" id="modal-debug" style="top: 80px; left: 460px;">
-  <div class="modal-bar">
-    <span class="modal-bar-title">Débogueur — Registres</span>
-    <button class="modal-close" title="Fermer">✕</button>
-  </div>
-  <div class="modal-body">
-
-    <!-- Registres -->
-    <div class="reg-grid">
-      <div class="reg-card wide">
-        <div class="reg-name">PC — Program Counter</div>
-        <div class="reg-val" id="dbg-pc">$0600</div>
-      </div>
-      <div class="reg-card sp">
-        <div class="reg-name">SP</div>
-        <div class="reg-val" id="dbg-sp">$FF</div>
-      </div>
-      <div class="reg-card">
-        <div class="reg-name">A — Accumulateur</div>
-        <div class="reg-val" id="dbg-a">$00</div>
-      </div>
-      <div class="reg-card">
-        <div class="reg-name">X</div>
-        <div class="reg-val" id="dbg-x">$00</div>
-      </div>
-      <div class="reg-card">
-        <div class="reg-name">Y</div>
-        <div class="reg-val" id="dbg-y">$00</div>
-      </div>
-    </div>
-
-    <!-- Flags -->
-    <div class="flags-label">Processor Status Flags</div>
-    <div class="flags-row">
-      <span class="flag-pill" id="flag-n">N</span>
-      <span class="flag-pill" id="flag-v">V</span>
-      <span class="flag-pill" id="flag-b">B</span>
-      <span class="flag-pill" id="flag-d">D</span>
-      <span class="flag-pill" id="flag-i">I</span>
-      <span class="flag-pill" id="flag-z">Z</span>
-      <span class="flag-pill" id="flag-c">C</span>
-    </div>
-
-    <!-- Moniteur mémoire -->
-    <div class="monitor-label">Moniteur mémoire</div>
-    <table class="monitor-table">
-      <thead>
-        <tr>
-          <th>Addr</th>
-          <th>Dec</th>
-          <th>Hex</th>
-          <th>Bin</th>
-        </tr>
-      </thead>
-      <tbody id="monitor-body">
-        <tr>
-          <td colspan="4" style="color:var(--text-muted); font-style:italic; padding: 6px;">
-            — assemblé non lancé —
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Goto -->
-    <div class="goto-row">
-      <input type="text" id="goto-input" placeholder="$0600" title="Aller à l'adresse">
-      <button class="goto-btn" id="goto-btn">Go</button>
-    </div>
-
-  </div>
-  <div class="modal-resize"></div>
-</div>
-
-
-<script src="app.js"></script>
-<script src="simulator.js"></script>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -1,0 +1,51 @@
+/* ─────────────────────────────────────────────────────────────
+   Chuck IDE — styles/tokens.css
+   Design tokens globaux — partagés avec les Shadow DOMs
+   via @import ou constructedStyleSheets.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────── */
+  --bg:          #0f0f0f;
+  --surface:     #161616;
+  --surface-2:   #1e1e1e;
+  --surface-3:   #272727;
+  --surface-4:   #2f2f2f;
+  --border:      #2a2a2a;
+  --border-2:    #353535;
+
+  /* ── Texte ────────────────────────────────────────────── */
+  --text:        #e2e2e2;
+  --text-dim:    #999;
+  --text-muted:  #555;
+
+  /* ── Accent & couleurs sémantiques ────────────────────── */
+  --accent:      #7c6af7;
+  --accent-dim:  rgba(124, 106, 247, 0.15);
+  --green:       #3dd68c;
+  --green-dim:   rgba(61, 214, 140, 0.12);
+  --red:         #f87171;
+  --red-dim:     rgba(248, 113, 113, 0.12);
+  --amber:       #fbbf24;
+  --amber-dim:   rgba(251, 191, 36, 0.12);
+  --cyan:        #38bdf8;
+  --cyan-dim:    rgba(56, 189, 248, 0.12);
+
+  /* ── Typographie ──────────────────────────────────────── */
+  --font-ui:     -apple-system, 'Inter', 'Segoe UI', sans-serif;
+  --font-mono:   'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+
+  /* ── Dimensions layout ────────────────────────────────── */
+  --titlebar-h:  36px;
+  --statusbar-h: 22px;
+  --toolbar-w:   58px;
+  --console-h:   130px;
+
+  /* ── Modales ──────────────────────────────────────────── */
+  --modal-radius:  10px;
+  --modal-shadow:  0 24px 60px rgba(0,0,0,.7), 0 4px 12px rgba(0,0,0,.4);
+
+  /* ── Transitions ──────────────────────────────────────── */
+  --t-fast:   0.1s ease;
+  --t-normal: 0.18s ease;
+}

@@ -1,0 +1,148 @@
+/* ─────────────────────────────────────────────────────────────
+   Chuck IDE — styles/global.css
+   Styles globaux — layout shell, titlebar, statusbar.
+   Les Web Components gèrent leur propre style en Shadow DOM.
+   ───────────────────────────────────────────────────────────── */
+
+@import './tokens.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* ── App shell ─────────────────────────────────────────────── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Title bar ─────────────────────────────────────────────── */
+#titlebar {
+  height: var(--titlebar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 12px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.tl-lights { display: flex; gap: 6px; }
+.tl-lights span {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  display: block;
+}
+.tl-close  { background: #ff5f57; }
+.tl-min    { background: #febc2e; }
+.tl-max    { background: #28c840; }
+
+.titlebar-logo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .06em;
+}
+
+.titlebar-file {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.titlebar-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.titlebar-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.titlebar-pill:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.titlebar-pill svg {
+  width: 12px; height: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Workspace ─────────────────────────────────────────────── */
+#workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Status bar ────────────────────────────────────────────── */
+#statusbar {
+  height: var(--statusbar-h);
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 10px;
+  font-size: 11px;
+  color: rgba(255,255,255,.85);
+  flex-shrink: 0;
+  user-select: none;
+}
+.sb-state { font-weight: 700; }
+.sb-state.running { color: var(--green); }
+.sb-state.error   { color: var(--red); }
+.sb-sep { color: rgba(255,255,255,.35); }
+.sb-right {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+/* ── Scrollbar globale ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--surface-4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
