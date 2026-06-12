@@ -211,9 +211,7 @@ export class ChuckChallengePanel extends ChuckComponent {
   protected render(): void {
     this.shadow.innerHTML = `<style>${STYLES}</style>
     <div class="panel-header">
-      <button class="nav-btn" id="prev-btn" title="Défi précédent" disabled>‹</button>
       <span class="panel-title" id="panel-title">Consigne</span>
-      <button class="nav-btn" id="next-btn" title="Défi suivant" disabled>›</button>
     </div>
     <div class="body" id="body">
       <div class="description" style="color:var(--text-muted);font-style:italic;padding-top:20px;text-align:center">
@@ -223,18 +221,6 @@ export class ChuckChallengePanel extends ChuckComponent {
   }
 
   protected setup(): void {
-    this.shadow.getElementById('prev-btn')!
-      .addEventListener('click', () => {
-        if (this._challenge && this._challenge.id > 1)
-          this.emit('chuck:goto-challenge', { id: this._challenge.id - 1 });
-      });
-
-    this.shadow.getElementById('next-btn')!
-      .addEventListener('click', () => {
-        if (this._challenge && this._challenge.id < this._totalCount)
-          this.emit('chuck:goto-challenge', { id: this._challenge.id + 1 });
-      });
-
     this.sub('chuck:challenge-loaded', ({ challenge }) => {
       this._challenge  = challenge;
       this._hintStates = (challenge.hints ?? []).map(() => false);
