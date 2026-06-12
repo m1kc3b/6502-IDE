@@ -225,7 +225,7 @@ export class ChuckChallengePanel extends ChuckComponent {
       this._challenge  = challenge;
       this._hintStates = (challenge.hints ?? []).map(() => false);
       this._renderChallenge();
-      this._updateNav();
+      // this._updateNav();
     });
 
     this.sub('chuck:challenge-success', ({ result }) => this._showFeedback(result, true));
@@ -246,14 +246,14 @@ export class ChuckChallengePanel extends ChuckComponent {
       ? `~${c.meta.estimatedMinutes} min`
       : '';
 
-    const zaksHtml = c.meta?.zaks ? `
-      <div class="zaks-ref">
-        <span class="zaks-icon">📖</span>
-        <div class="zaks-text">
-          ${c.meta.zaks.chapter}, p.&nbsp;${c.meta.zaks.page}<br>
-          <strong>${this._esc(c.meta.zaks.topic)}</strong>
-        </div>
-      </div>` : '';
+    // const zaksHtml = c.meta?.zaks ? `
+    //   <div class="zaks-ref">
+    //     <span class="zaks-icon">📖</span>
+    //     <div class="zaks-text">
+    //       ${c.meta.zaks.chapter}, p.&nbsp;${c.meta.zaks.page}<br>
+    //       <strong>${this._esc(c.meta.zaks.topic)}</strong>
+    //     </div>
+    //   </div>` : '';
 
     const conceptsHtml = (c.meta?.concepts?.length ?? 0) > 0 ? `
       <div class="concepts">
@@ -276,7 +276,7 @@ export class ChuckChallengePanel extends ChuckComponent {
         <div class="challenge-day">${timeHtml}</div>
         <div class="challenge-title">${this._esc(c.title)}</div>
       </div>
-      ${zaksHtml}
+      
       <div class="description">${this._md(c.description)}</div>
       ${conceptsHtml}
       ${hintsHtml}
@@ -306,14 +306,14 @@ export class ChuckChallengePanel extends ChuckComponent {
   }
 
   // ── Navigation prev/next ─────────────────────────────────
-  private _updateNav(): void {
-    const prev = this.shadow.getElementById('prev-btn') as HTMLButtonElement;
-    const next = this.shadow.getElementById('next-btn') as HTMLButtonElement;
-    if (!this._challenge) return;
-    prev.disabled = this._challenge.id <= 1;
-    next.disabled = this._challenge.id >= this._totalCount;
-    next.classList.remove('next-success');
-  }
+  // private _updateNav(): void {
+  //   const prev = this.shadow.getElementById('prev-btn') as HTMLButtonElement;
+  //   const next = this.shadow.getElementById('next-btn') as HTMLButtonElement;
+  //   if (!this._challenge) return;
+  //   prev.disabled = this._challenge.id <= 1;
+  //   next.disabled = this._challenge.id >= this._totalCount;
+  //   next.classList.remove('next-success');
+  // }
 
   // ── Validation ───────────────────────────────────────────
   private _validate(): void {
@@ -368,9 +368,9 @@ export class ChuckChallengePanel extends ChuckComponent {
 
   private _resetFeedback(): void {
     const el   = this.shadow.getElementById('feedback');
-    const next = this.shadow.getElementById('next-btn') as HTMLButtonElement | null;
+    // const next = this.shadow.getElementById('next-btn') as HTMLButtonElement | null;
     if (el)   el.className = 'feedback';
-    if (next) { next.classList.remove('next-success'); this._updateNav(); }
+    // if (next) { next.classList.remove('next-success'); this._updateNav(); }
   }
 
   // ── Markdown minimal ──────────────────────────────────────
