@@ -1,529 +1,849 @@
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
   "challenges": [
     {
       "id": 1,
-      "title": "Allô le CPU ?",
-      "description": "## 🟢 Arène 1 — Le Cockpit\n\nBienvenue. Tu es au volant d'un processeur MOS 6502 — la puce qui faisait tourner l'Apple II, l'Atari 2600 et le NES.\n\nLe CPU a trois registres principaux : **A** (Accumulateur), **X** et **Y**. Ce sont tes trois cases mémoire ultra-rapides.\n\n`LDA #$42` signifie : *charge la valeur brute 66 (hex) dans A*.\n- `#` = valeur immédiate\n- `$` = notation hexadécimale\n- `BRK` = arrêt\n\n## Mission\nCharge la valeur `#$42` dans A.",
-      "template": "; Défi 01 — Allô le CPU ?\n; Ouvre le panneau Registres pour voir A changer !\n\n  ; Charge #$42 dans A\n\n\n  BRK\n",
+      "arena": 1,
+      "arena_name": "Le Cockpit",
+      "title": "Ignition",
+      "description": "## 📡 Théorie — Le registre A\n\nLe **registre A** (Accumulateur) est l'ardoise magique du 6502. Toute valeur qui entre ou sort de la mémoire passe par lui :\n\n```asm\nLDA #$01   ; charge la valeur 1 dans A\n           ; # = valeur directe  $ = hexadécimal\n```\n\n`$01` = 1, `$0F` = 15, `$FF` = 255.\n\n---\n\n## 🎯 Mission — Le réacteur principal\n\nLe programme ci-dessous construit le corps d'une fusée pixel par pixel. Mais **la ligne qui allume le réacteur central a été effacée**. Sans elle, le cœur reste noir et la fusée ne peut pas décoller.\n\nLe réacteur doit briller en **blanc** (`#$01`) à l'adresse `$0250`.\n\n```asm\n; ══════════════════════════════════════\n;  FUSÉE SPATIALE — Module 1/6\n;  Statut : RÉACTEUR HORS-LIGNE\n; ══════════════════════════════════════\n\n  LDA #$07 : STA $0210  ; sommet jaune\n  LDA #$07 : STA $0230  ; corps\n  ???                   ; ← RÉACTEUR BLANC ICI\n  STA $0250             ; adresse du réacteur\n  LDA #$07 : STA $0270  ; corps\n  LDA #$07 : STA $0290  ; queue\n\n  BRK\n```\n\nRemplace `???` par l'instruction qui charge le blanc dans A.",
+      "template": "; ══════════════════════════════════════\n;  FUSÉE SPATIALE — Module 1/6\n;  Statut : RÉACTEUR HORS-LIGNE\n; ══════════════════════════════════════\n\n  LDA #$07 : STA $0210  ; sommet\n  LDA #$07 : STA $0230  ; corps\n  ???        ; charge blanc (#$01) dans A ← TA MISSION\n  STA $0250  ; réacteur central\n  LDA #$07 : STA $0270  ; corps\n  LDA #$07 : STA $0290  ; queue\n\n  BRK\n",
       "assertions": [
         {
-          "type": "register",
-          "register": "A",
-          "value": 66,
-          "failMsg": "A devrait contenir $42 (66). Essaie : LDA #$42"
+          "type": "memory",
+          "address": 592,
+          "value": 1,
+          "failMsg": "Le réacteur ($0250) devrait briller en blanc ($01). LDA #$01 charge la valeur 1 dans A."
         }
       ],
-      "maxCycles": 100,
+      "maxCycles": 200,
       "hints": [
         {
-          "text": "L'instruction est LDA (Load Accumulator). Syntaxe : LDA #$42"
+          "text": "L'instruction pour charger une valeur dans A est LDA (Load Accumulator)."
+        },
+        {
+          "text": "Syntaxe : LDA #$01 — le # signifie valeur directe, le $ signifie hexadécimal."
         }
       ],
       "meta": {
+        "concepts": [
+          "LDA",
+          "STA",
+          "Immédiat",
+          "Registre A"
+        ],
+        "estimatedMinutes": 5,
         "zaks": {
           "chapter": "Chapitre 2",
           "page": 33,
           "topic": "Le registre Accumulateur"
-        },
-        "concepts": [
-          "LDA",
-          "BRK",
-          "Registre A",
-          "Hexadécimal"
-        ],
-        "estimatedMinutes": 5
+        }
       }
     },
     {
       "id": 2,
-      "title": "Le Premier Pixel !",
-      "description": "## L'écran est de la mémoire\n\nLes adresses `$0200` à `$05FF` sont connectées à l'écran 32x32. Écrire une valeur à `$0200` allume le pixel haut-gauche.\n\n**Palette (0-15) :**\n`$00`=Noir `$01`=Blanc `$02`=Rouge `$03`=Cyan\n`$04`=Violet `$05`=Vert `$06`=Bleu `$07`=Jaune\n`$08`=Orange `$09`=Brun `$0A`=Rose `$0B`=Gris foncé\n\n## Mission\nAllume le pixel `$0200` en blanc (`$01`).\n\n💡 Ouvre la fenêtre **Écran** pour voir le résultat !",
-      "template": "; Défi 02 — Le Premier Pixel !\n; Ouvre la fenêtre Écran.\n\n  ; 1. Charge la couleur blanche (#$01) dans A\n  ; 2. Écris-la à l'adresse $0200\n\n\n  BRK\n",
+      "arena": 1,
+      "arena_name": "Le Cockpit",
+      "title": "Les Ailes",
+      "description": "## 📡 Théorie — LDX, LDY et les transferts\n\nLe 6502 a deux registres assistants : **X** et **Y**. Mais **seul A peut écrire en mémoire** avec `STA`. Pour utiliser une valeur de X ou Y, il faut la copier dans A d'abord :\n\n```asm\nLDX #$02   ; charge $02 dans X\nTXA        ; Transfer X → A\nSTA $0300  ; maintenant on peut écrire\n\nLDY #$05   ; charge $05 dans Y\nTYA        ; Transfer Y → A\nSTA $0301\n```\n\n---\n\n## 🎯 Mission — Les ailes de la fusée\n\nL'ingénieur a mis les bonnes couleurs dans X et Y, mais **a oublié les instructions de transfert** vers A avant chaque `STA`. La fusée est asymétrique — une aile manque !\n\n```asm\n;  FUSÉE — Module 2/6 — AILES MANQUANTES\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 ; réacteur\n  LDA #$07 : STA $0270 : LDA #$07 : STA $0290\n\n; AILE GAUCHE : rouge ($02) via X\n  LDX #$02\n  ???        ; ← transfère X vers A\n  STA $024F  ; pixel gauche du réacteur\n\n; AILE DROITE : rouge ($02) via Y\n  LDY #$02\n  ???        ; ← transfère Y vers A\n  STA $0251  ; pixel droit du réacteur\n\n  BRK\n```",
+      "template": ";  FUSÉE — Module 2/6 — AILES MANQUANTES\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250\n  LDA #$07 : STA $0270 : LDA #$07 : STA $0290\n\n; AILE GAUCHE via X\n  LDX #$02\n  ???        ; transfère X vers A\n  STA $024F\n\n; AILE DROITE via Y\n  LDY #$02\n  ???        ; transfère Y vers A\n  STA $0251\n\n  BRK\n",
       "assertions": [
         {
           "type": "memory",
-          "address": 512,
-          "value": 1,
-          "failMsg": "Pixel $0200 devrait être blanc ($01). LDA #$01 puis STA $0200."
-        }
-      ],
-      "maxCycles": 100,
-      "hints": [
-        {
-          "text": "LDA #$01 charge le blanc dans A. STA $0200 l'écrit à l'adresse écran."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 3",
-          "page": 52,
-          "topic": "Memory-mapped display"
-        },
-        "concepts": [
-          "LDA",
-          "STA",
-          "Memory mapping",
-          "Écran"
-        ],
-        "estimatedMinutes": 5
-      }
-    },
-    {
-      "id": 3,
-      "title": "Le Triangle de Couleurs",
-      "description": "## Trois pixels, trois couleurs\n\nMaintenant allumes-en trois avec des couleurs différentes :\n- `$0200` = pixel (0,0) — coin haut-gauche\n- `$0201` = pixel (1,0)\n- `$0202` = pixel (2,0)\n\nChaque fois que tu veux changer de couleur, recharge A avec `LDA #$xx`.\n\n## Mission\n- Pixel `$0200` → Rouge `$02`\n- Pixel `$0201` → Vert `$05`\n- Pixel `$0202` → Bleu `$06`",
-      "template": "; Défi 03 — Triangle de Couleurs\n\n  ; Pixel rouge en $0200\n  LDA #$02\n  STA $0200\n\n  ; Pixel vert en $0201\n  ; ...\n\n  ; Pixel bleu en $0202\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 512,
+          "address": 591,
           "value": 2,
-          "failMsg": "Pixel $0200 devrait être rouge ($02)"
+          "failMsg": "Aile gauche ($024F) devrait être rouge ($02). Utilise TXA pour copier X dans A."
         },
         {
           "type": "memory",
-          "address": 513,
-          "value": 5,
-          "failMsg": "Pixel $0201 devrait être vert ($05)"
-        },
-        {
-          "type": "memory",
-          "address": 514,
-          "value": 6,
-          "failMsg": "Pixel $0202 devrait être bleu ($06)"
+          "address": 593,
+          "value": 2,
+          "failMsg": "Aile droite ($0251) devrait être rouge ($02). Utilise TYA pour copier Y dans A."
         }
       ],
       "maxCycles": 200,
       "hints": [
         {
-          "text": "Pour chaque pixel : LDA #couleur puis STA adresse."
+          "text": "TXA copie X dans A (Transfer X to A)."
+        },
+        {
+          "text": "TYA copie Y dans A (Transfer Y to A)."
         }
       ],
       "meta": {
-        "zaks": {
-          "chapter": "Chapitre 3",
-          "page": 54,
-          "topic": "Écriture séquentielle"
-        },
-        "concepts": [
-          "LDA",
-          "STA",
-          "Palette"
-        ],
-        "estimatedMinutes": 5
-      }
-    },
-    {
-      "id": 4,
-      "title": "Les Registres X et Y",
-      "description": "## Deux assistants pour A\n\n- `LDX #$val` — charge dans X\n- `LDY #$val` — charge dans Y\n- `TXA` — copie X → A\n- `TYA` — copie Y → A\n\nOn ne peut écrire en mémoire que depuis A avec `STA`. X et Y sont des assistants.\n\n## Mission\n1. Charge `#$07` (jaune) dans X, transfère vers A, écris en `$0203`\n2. Charge `#$08` (orange) dans Y, transfère vers A, écris en `$0204`",
-      "template": "; Défi 04 — Registres X et Y\n\n  ; Jaune via X en $0203\n  LDX #$07\n  ; TXA puis STA $0203\n\n\n  ; Orange via Y en $0204\n  LDY #$08\n  ; TYA puis STA $0204\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "X",
-          "value": 7,
-          "failMsg": "X devrait contenir $07"
-        },
-        {
-          "type": "register",
-          "register": "Y",
-          "value": 8,
-          "failMsg": "Y devrait contenir $08"
-        },
-        {
-          "type": "memory",
-          "address": 515,
-          "value": 7,
-          "failMsg": "Pixel $0203 devrait être jaune ($07)"
-        },
-        {
-          "type": "memory",
-          "address": 516,
-          "value": 8,
-          "failMsg": "Pixel $0204 devrait être orange ($08)"
-        }
-      ],
-      "maxCycles": 200,
-      "hints": [
-        {
-          "text": "TXA copie X dans A. TYA copie Y dans A. Puis STA adresse."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 2",
-          "page": 35,
-          "topic": "Registres X et Y, transferts"
-        },
         "concepts": [
           "LDX",
           "LDY",
           "TXA",
           "TYA",
-          "Registres index"
+          "Transferts"
         ],
-        "estimatedMinutes": 10
+        "estimatedMinutes": 8,
+        "zaks": {
+          "chapter": "Chapitre 2",
+          "page": 35,
+          "topic": "Registres X et Y"
+        }
       }
     },
     {
-      "id": 5,
-      "title": "La Zero Page — Ton Bloc-Notes",
-      "description": "## La mémoire la plus rapide\n\nLes adresses `$00` à `$FF` forment la **Zero Page** — 256 octets que le CPU accède 2× plus vite. `STA $10` écrit A à `$0010`. `LDA $10` relit.\n\n## Mission\nUn calcul en 4 étapes :\n1. Charge `#$0A` dans A\n2. Sauvegarde A en `$10`\n3. Écrase A avec `#$00`\n4. Recharge depuis `$10` — A doit revenir à `$0A`\n\n_C'est le cycle fondamental du 6502 : calculer, sauvegarder, recharger._",
-      "template": "; Défi 05 — La Zero Page\n\n  ; 1. Charge #$0A dans A\n  LDA #$0A\n\n  ; 2. Sauvegarde en $10\n  ; ...\n\n  ; 3. Sabotage !\n  LDA #$00\n\n  ; 4. Recharge depuis $10\n  ; ...\n\n\n  BRK\n",
+      "id": 3,
+      "arena": 1,
+      "arena_name": "Le Cockpit",
+      "title": "La Boîte Noire",
+      "description": "## 📡 Théorie — La Zero Page\n\nLes adresses `$00` à `$FF` forment la **Zero Page** — le CPU y accède 2× plus vite car l'adresse ne prend qu'1 octet. C'est l'espace des variables rapides :\n\n```asm\n  LDA #$2A   ; valeur 42\n  STA $10    ; stocke à l'adresse $10 (Zero Page)\n\n  LDA $10    ; recharge depuis $10 → A = 42 à nouveau\n```\n\n---\n\n## 🎯 Mission — Télémétrie corrompue\n\nLe système de télémétrie stocke 3 paramètres de vol en Zero Page. Mais les **adresses de stockage ont été corrompues** — elles pointent vers les mauvaises cases. La vitesse devrait être en `$10`, l'altitude en `$11`, le carburant en `$12`.\n\n```asm\n;  FUSÉE — Module 3/6 — TÉLÉMÉTRIE CORROMPUE\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n  LDA #$64   ; vitesse = 100\n  STA $FF    ; BUG — devrait être $10\n\n  LDA #$20   ; altitude = 32\n  STA $FE    ; BUG — devrait être $11\n\n  LDA #$50   ; carburant = 80%\n  STA $FD    ; BUG — devrait être $12\n\n  LDA $10    ; vérification : relit la vitesse\n  STA $02B0  ; s'affiche en blanc si correct\n  BRK\n```\n\nCorrige les trois adresses `STA`.",
+      "template": ";  FUSÉE — Module 3/6 — TÉLÉMÉTRIE CORROMPUE\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n  LDA #$64   ; vitesse = 100\n  STA $FF    ; BUG — devrait être $10\n\n  LDA #$20   ; altitude = 32\n  STA $FE    ; BUG — devrait être $11\n\n  LDA #$50   ; carburant = 80%\n  STA $FD    ; BUG — devrait être $12\n\n  LDA $10    ; vérification\n  STA $02B0\n  BRK\n",
       "assertions": [
         {
           "type": "memory",
           "address": 16,
-          "value": 10,
-          "failMsg": "$10 devrait contenir $0A (10)"
-        },
-        {
-          "type": "register",
-          "register": "A",
-          "value": 10,
-          "failMsg": "A devrait valoir $0A — as-tu rechargé depuis $10 ?"
-        }
-      ],
-      "maxCycles": 200,
-      "hints": [
-        {
-          "text": "STA $10 sauvegarde A. LDA $10 recharge depuis cette adresse."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 3",
-          "page": 48,
-          "topic": "Zero Page"
-        },
-        "concepts": [
-          "LDA",
-          "STA",
-          "Zero Page",
-          "Cycle lecture-écriture"
-        ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 6,
-      "title": "⚔️ Boss — Les 4 Coins",
-      "description": "## Boss de l'Arène 1\n\nTu maîtrises registres, mémoire et écran. Prouve-le.\n\nL'écran est 32×32. Chaque ligne = 32 octets = `$20`.\n- Haut-gauche : `$0200`\n- Haut-droit : `$021F` ($0200 + 31)\n- Bas-gauche : `$05E0` ($0200 + 31×$20)\n- Bas-droit : `$05FF`\n\n## Mission\nAllume les 4 coins :\n- Haut-gauche `$0200` → Rouge `$02`\n- Haut-droit `$021F` → Vert `$05`\n- Bas-gauche `$05E0` → Jaune `$07`\n- Bas-droit `$05FF` → Cyan `$03`",
-      "template": "; Défi 06 — Boss : Les 4 Coins\n\n  LDA #$02 : STA $0200   ; Haut-gauche rouge\n  LDA #$05 : STA $021F   ; Haut-droit vert\n\n  ; Bas-gauche $05E0 → jaune $07\n  ; ...\n\n  ; Bas-droit $05FF → cyan $03\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 512,
-          "value": 2,
-          "failMsg": "Haut-gauche $0200 devrait être rouge ($02)"
+          "value": 100,
+          "failMsg": "Vitesse en $10 (= $64). Corrige STA $FF → STA $10"
         },
         {
           "type": "memory",
-          "address": 543,
-          "value": 5,
-          "failMsg": "Haut-droit $021F devrait être vert ($05)"
+          "address": 17,
+          "value": 32,
+          "failMsg": "Altitude en $11 (= $20). Corrige STA $FE → STA $11"
         },
         {
           "type": "memory",
-          "address": 1504,
-          "value": 7,
-          "failMsg": "Bas-gauche $05E0 devrait être jaune ($07)"
+          "address": 18,
+          "value": 80,
+          "failMsg": "Carburant en $12 (= $50). Corrige STA $FD → STA $12"
         },
         {
           "type": "memory",
-          "address": 1535,
-          "value": 3,
-          "failMsg": "Bas-droit $05FF devrait être cyan ($03)"
+          "address": 688,
+          "value": 100,
+          "failMsg": "La vérification LDA $10 relit la vitesse — doit valoir $64."
         }
       ],
       "maxCycles": 300,
       "hints": [
         {
-          "text": "$05E0 = $0200 + 31×$20 = $0200 + $03E0. Calcule : 31 lignes × 32 octets = 992 = $3E0."
+          "text": "STA $10 stocke A à l'adresse $10 en Zero Page. Remplace chaque adresse corrompue par la bonne."
         },
         {
-          "text": "$05FF = $05E0 + $1F (31 colonnes)"
+          "text": "Les trois bonnes adresses sont $10, $11 et $12 dans l'ordre."
         }
       ],
       "meta": {
+        "concepts": [
+          "STA",
+          "LDA",
+          "Zero Page",
+          "Débogage"
+        ],
+        "estimatedMinutes": 8,
         "zaks": {
           "chapter": "Chapitre 3",
-          "page": 55,
-          "topic": "Calcul d'adresses"
-        },
-        "concepts": [
-          "LDA",
-          "STA",
-          "Calcul adresse",
-          "Géométrie écran"
-        ],
-        "estimatedMinutes": 15
+          "page": 48,
+          "topic": "Zero Page"
+        }
       }
     },
     {
-      "id": 7,
-      "title": "Addition : CLC + ADC",
-      "description": "## 🔵 Arène 2 — La Calculatrice\n\n**ADC** (Add with Carry) additionne aussi le Carry flag. Si Carry=1, il ajoute 1 de trop.\n\n**Règle d'or : toujours `CLC` avant une addition.**\n\n```\nCLC\nLDA #$14   ; A = 20\nADC #$0A   ; A = 30\n```\n\n## Mission\nCalcule `$18 + $24` (24 + 36 = 60 = `$3C`) et stocke le résultat en `$20`.",
-      "template": "; Défi 07 — Addition propre\n\n  CLC\n  LDA #$18\n  ; ADC #$24...\n\n\n  ; Stocke le résultat en $20\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "A",
-          "value": 60,
-          "failMsg": "A devrait contenir $3C (60) : $18 + $24 = $3C"
-        },
-        {
-          "type": "memory",
-          "address": 32,
-          "value": 60,
-          "failMsg": "$20 devrait contenir $3C"
-        }
-      ],
-      "maxCycles": 100,
-      "hints": [
-        {
-          "text": "ADC #$24 additionne $24 à A. N'oublie pas CLC avant !"
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 5",
-          "page": 78,
-          "topic": "ADC — Add with Carry"
-        },
-        "concepts": [
-          "ADC",
-          "CLC",
-          "Flag Carry"
-        ],
-        "estimatedMinutes": 5
-      }
-    },
-    {
-      "id": 8,
-      "title": "Soustraction : SEC + SBC",
-      "description": "## L'inverse de l'addition\n\n**SBC** (Subtract with Carry) exige le Carry **activé** avec `SEC`.\n\n```\nSEC\nLDA #$50   ; A = 80\nSBC #$20   ; A = 48\n```\n\nSi tu oublies `SEC`, le CPU soustrait 1 de trop.\n\n## Mission\nCalcule `$50 - $1E` (80 - 30 = 50 = `$32`). Stocke en `$10`.",
-      "template": "; Défi 08 — Soustraction\n\n  SEC\n  LDA #$50\n  ; SBC #$1E...\n\n\n  STA $10\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "A",
-          "value": 50,
-          "failMsg": "A devrait contenir $32 (50) : $50 - $1E = $32"
-        },
-        {
-          "type": "memory",
-          "address": 16,
-          "value": 50,
-          "failMsg": "$10 devrait contenir $32"
-        }
-      ],
-      "maxCycles": 100,
-      "hints": [
-        {
-          "text": "SBC #$1E soustrait $1E de A. N'oublie pas SEC avant !"
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 5",
-          "page": 82,
-          "topic": "SBC — Subtract with Carry"
-        },
-        "concepts": [
-          "SBC",
-          "SEC",
-          "Flag Carry"
-        ],
-        "estimatedMinutes": 5
-      }
-    },
-    {
-      "id": 9,
-      "title": "Comparaison et Branchement",
-      "description": "## Le CPU pense en flags\n\n`CMP` compare A sans modifier A, et positionne les flags :\n- **Z=1** si A = valeur → `BEQ` (Branch if Equal)\n- **C=1** si A ≥ valeur → `BCS`\n- **C=0** si A < valeur → `BCC`\n\n## Mission\nSi A vaut `$10`, saute à `EGAL` et mets `$FF` en `$10`.\nSinon, mets `$00` en `$10`.\nA est initialisé à `$10` — le saut doit être pris.",
-      "template": "; Défi 09 — Comparaison\n\n  LDA #$10\n  CMP #$10\n\n  ; Si égal, saute à EGAL\n  ; ...\n\n  LDA #$00 : STA $10\n  BRK\n\nEGAL:\n  LDA #$FF\n  STA $10\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 16,
-          "value": 255,
-          "failMsg": "$10 devrait contenir $FF — BEQ EGAL doit être pris"
-        }
-      ],
-      "maxCycles": 200,
-      "hints": [
-        {
-          "text": "BEQ EGAL saute si le flag Z est à 1 (égalité après CMP)."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 6",
-          "page": 98,
-          "topic": "CMP + BEQ"
-        },
-        "concepts": [
-          "CMP",
-          "BEQ",
-          "BCC",
-          "BCS",
-          "Flags",
-          "Labels"
-        ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 10,
-      "title": "INX / DEX — Les Compteurs",
-      "description": "## Incrémenter sans ADC\n\n- `INX` — X + 1, `DEX` — X - 1\n- `INY` / `DEY` — idem pour Y\n- Pas besoin de CLC\n- Flag Z s'active quand le résultat = 0\n\n**Débordement :** `$FF + 1 = $00` (flag Z = 1)\n\n## Mission\n1. Charge `#$03` dans X, décrémente 3 fois → X = `$00`\n2. Charge `#$FE` dans Y, incrémente 2 fois → Y = `$00` (débordement)",
-      "template": "; Défi 10 — INX / DEX\n\n  LDX #$03\n  DEX\n  DEX\n  DEX\n  ; X = $00\n\n  LDY #$FE\n  ; 2 × INY pour arriver à $00 par débordement\n  ; ...\n\n\n  BRK\n",
+      "id": 4,
+      "arena": 1,
+      "arena_name": "Le Cockpit",
+      "title": "Le Compte à Rebours",
+      "description": "## 📡 Théorie — INX, DEX et le flag Z\n\nPour compter sans ADC, le 6502 a des raccourcis :\n\n```asm\nINX  ; X = X + 1\nDEX  ; X = X - 1\n```\n\nQuand le résultat atteint **zéro**, le **flag Z** s'active automatiquement. Si X vaut `$FF` et qu'on fait `INX`, il déborde silencieusement à `$00` — Z s'active aussi.\n\n---\n\n## 🎯 Mission — Séquence de lancement incorrecte\n\nLa tour de contrôle exige que **X = 0 et Y = $FF** après la séquence. Un technicien a mis la mauvaise valeur initiale pour X et un INY de trop pour Y.\n\n```asm\n;  FUSÉE — Module 4/6 — SÉQUENCE INCORRECTE\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n; X doit finir à 0 après 3 DEX\n  LDX #$05   ; BUG — quelle valeur pour que 3×DEX = 0 ?\n  DEX : DEX : DEX\n\n; Y doit finir à $FF ($FD + 2 INY = $FF)\n  LDY #$FD\n  INY : INY\n  INY        ; BUG — ce INY est en trop\n\n  TXA : STA $02D0\n  TYA : STA $02D1\n  BRK\n```",
+      "template": ";  FUSÉE — Module 4/6 — SÉQUENCE INCORRECTE\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n; X = 0 après 3 DEX\n  LDX #$05   ; BUG 1 — change la valeur initiale\n  DEX : DEX : DEX\n\n; Y = $FF après FD + INY\n  LDY #$FD\n  INY : INY\n  INY        ; BUG 2 — cette ligne est en trop\n\n  TXA : STA $02D0\n  TYA : STA $02D1\n  BRK\n",
       "assertions": [
         {
           "type": "register",
           "register": "X",
           "value": 0,
-          "failMsg": "X devrait valoir $00"
+          "failMsg": "X devrait valoir 0. 3×DEX depuis quelle valeur donne 0 ?"
         },
         {
           "type": "register",
           "register": "Y",
-          "value": 0,
-          "failMsg": "Y devrait valoir $00 (2 incréments depuis $FE)"
+          "value": 255,
+          "failMsg": "Y devrait valoir $FF (255). $FD + 2×INY = $FF. Le 3ème INY dépasse."
         },
         {
-          "type": "flag",
-          "flag": "Z",
-          "set": true,
-          "failMsg": "Flag Z devrait être activé (dernier résultat = 0)"
+          "type": "memory",
+          "address": 720,
+          "value": 0,
+          "failMsg": "$02D0 devrait contenir 0."
+        },
+        {
+          "type": "memory",
+          "address": 721,
+          "value": 255,
+          "failMsg": "$02D1 devrait contenir $FF."
         }
       ],
-      "maxCycles": 200,
+      "maxCycles": 300,
       "hints": [
         {
-          "text": "INY deux fois depuis $FE : $FE → $FF → $00. Flag Z s'active à $00."
+          "text": "BUG 1 : 3×DEX → 0. Si on soustrait 3, la valeur initiale doit être 3. LDX #$03."
+        },
+        {
+          "text": "BUG 2 : $FD + 2 incréments = $FF. Supprime le 3ème INY."
         }
       ],
       "meta": {
-        "zaks": {
-          "chapter": "Chapitre 3",
-          "page": 57,
-          "topic": "INX, INY, DEX, DEY et flag Zero"
-        },
         "concepts": [
           "INX",
           "INY",
           "DEX",
           "DEY",
-          "Flag Z",
-          "Débordement"
+          "Flag Z"
         ],
-        "estimatedMinutes": 10
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 3",
+          "page": 57,
+          "topic": "INX, INY, DEX, DEY"
+        }
       }
     },
     {
-      "id": 11,
-      "title": "Logique Binaire — AND, ORA, EOR",
-      "description": "## Opérer bit à bit\n\n- `AND #$0F` → ne garde que les 4 bits bas\n- `ORA #$F0` → allume les 4 bits hauts\n- `EOR #$FF` → inverse tous les bits\n\n## Mission\nPartant de `#$B7` :\n1. `AND #$0F` → en `$10` (résultat : `$07`)\n2. `ORA #$F0` → en `$11` (résultat : `$F7`)\n3. `EOR #$FF` → en `$12` (résultat : `$48`)",
-      "template": "; Défi 11 — AND, ORA, EOR\n\n  LDA #$B7\n  AND #$0F\n  STA $10    ; devrait contenir $07\n\n  LDA #$B7\n  ORA #$F0\n  STA $11    ; devrait contenir $F7\n\n  LDA #$B7\n  ; EOR #$FF...\n  STA $12    ; devrait contenir $48\n\n\n  BRK\n",
+      "id": 5,
+      "arena": 1,
+      "arena_name": "Le Cockpit",
+      "title": "La Flamme des Propulseurs",
+      "description": "## 📡 Théorie — ADC et SBC\n\n**ADC** (Add with Carry) et **SBC** (Subtract with Carry) incluent le **Carry flag**. Il faut le remettre à l'état correct avant chaque opération :\n\n```asm\nCLC        ; Clear Carry — TOUJOURS avant ADC\nLDA #$10\nADC #$05   ; A = $15\n\nSEC        ; Set Carry — TOUJOURS avant SBC\nLDA #$20\nSBC #$08   ; A = $18\n```\n\nSi tu oublies `CLC`, ton addition sera peut-être décalée de 1.\n\n---\n\n## 🎯 Mission — Propulseurs mal calibrés\n\nLe module de puissance calcule l'intensité des flammes par des additions et soustractions. Mais **toutes les instructions CLC/SEC ont été supprimées** lors d'une mise à jour. Les calculs dévient.\n\n```asm\n;  FUSÉE — Module 5/6 — PROPULSEURS DÉRÉGLÉS\n\n  ; [corps fusée inchangé...]\n\n; PROPULSEUR GAUCHE : $30 + $12 = $42, AND $0F = $02\n  LDA #$30\n  ; ← CLC manquant ici\n  ADC #$12\n  AND #$0F\n  STA $02B0   ; devrait valoir $02 (rouge)\n\n; PROPULSEUR DROIT : $50 - $10 = $40, AND $0F = $00\n  LDA #$50\n  ; ← SEC manquant ici\n  SBC #$10\n  AND #$0F\n  STA $02B1   ; devrait valoir $00 (noir)\n\n  BRK\n```\n\nAjoute `CLC` avant le premier `ADC` et `SEC` avant le premier `SBC`.",
+      "template": ";  FUSÉE — Module 5/6 — PROPULSEURS DÉRÉGLÉS\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n; GAUCHE : $30 + $12 = $42 → AND $0F = $02\n  LDA #$30\n  ; ajoute CLC ici\n  ADC #$12\n  AND #$0F\n  STA $02B0\n\n; DROIT : $50 - $10 = $40 → AND $0F = $00\n  LDA #$50\n  ; ajoute SEC ici\n  SBC #$10\n  AND #$0F\n  STA $02B1\n\n  BRK\n",
       "assertions": [
         {
           "type": "memory",
-          "address": 16,
-          "value": 7,
-          "failMsg": "$10 devrait contenir $07 : $B7 AND $0F = $07"
+          "address": 688,
+          "value": 2,
+          "failMsg": "$02B0 devrait valoir $02 : ($30 + $12) AND $0F = $42 AND $0F = $02. Ajoute CLC avant ADC."
         },
         {
           "type": "memory",
-          "address": 17,
-          "value": 247,
-          "failMsg": "$11 devrait contenir $F7 : $B7 ORA $F0 = $F7"
-        },
-        {
-          "type": "memory",
-          "address": 18,
-          "value": 72,
-          "failMsg": "$12 devrait contenir $48 : $B7 EOR $FF = $48"
+          "address": 689,
+          "value": 0,
+          "failMsg": "$02B1 devrait valoir $00 : ($50 - $10) AND $0F = $40 AND $0F = $00. Ajoute SEC avant SBC."
         }
       ],
-      "maxCycles": 200,
+      "maxCycles": 300,
       "hints": [
         {
-          "text": "EOR #$FF inverse chaque bit : $B7 = 10110111 → 01001000 = $48."
+          "text": "CLC (Clear Carry) doit précéder toute ADC. SEC (Set Carry) doit précéder toute SBC."
+        },
+        {
+          "text": "$30 + $12 = $42. $42 AND $0F = $02. Si tu obtiens $03, c'est que Carry était à 1."
         }
       ],
       "meta": {
+        "concepts": [
+          "ADC",
+          "SBC",
+          "CLC",
+          "SEC",
+          "AND",
+          "Flag Carry"
+        ],
+        "estimatedMinutes": 10,
         "zaks": {
           "chapter": "Chapitre 5",
-          "page": 92,
-          "topic": "AND, ORA, EOR"
-        },
-        "concepts": [
-          "AND",
-          "ORA",
-          "EOR",
-          "Masque binaire"
-        ],
-        "estimatedMinutes": 10
+          "page": 78,
+          "topic": "ADC et SBC"
+        }
       }
     },
     {
-      "id": 12,
-      "title": "⚔️ Boss — Le Thermomètre",
-      "description": "## Boss de l'Arène 2\n\nReprésentons une valeur visuellement sur l'écran.\n\nUn thermomètre : les 8 premiers pixels de la ligne 1 représentent une valeur (0-8).\n- Pixels 0-3 (`$0200`-`$0203`) → couleur bleue `$06` (froid)\n- Pixels 4-7 (`$0204`-`$0207`) → couleur rouge `$02` (chaud)\n\n**Bonus :** Stocke la valeur `8` en `$10` comme \"niveau actuel du thermomètre\".",
-      "template": "; Défi 12 — Boss : Le Thermomètre\n\n  ; Niveau = 8 pixels allumés\n  LDA #$08\n  STA $10\n\n  ; 4 pixels bleus ($0200-$0203)\n  LDA #$06\n  STA $0200\n  STA $0201\n  STA $0202\n  STA $0203\n\n  ; 4 pixels rouges ($0204-$0207)\n  LDA #$02\n  ; ...\n\n\n  BRK\n",
+      "id": 6,
+      "arena": 1,
+      "arena_name": "Le Cockpit",
+      "title": "⚔️ BOSS — Décollage !",
+      "description": "## 📡 Récapitulatif Arène 1\n\nTu maîtrises : `LDA/STA/LDX/LDY`, transferts `TXA/TYA`, compteurs `INX/DEX`, arithmétique `ADC/SBC` avec `CLC/SEC`, et la Zero Page.\n\n---\n\n## 🎯 Mission BOSS — Les 4 propulseurs\n\nPour le décollage, il faut allumer les **4 propulseurs dans les 4 coins de l'écran** en couleur vert clair (`$0D`). Les variables sont stockées en Zero Page. Le code est là mais **4 instructions STA ont été effacées**.\n\n```asm\n;  FUSÉE — BOSS / DÉCOLLAGE\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n  LDA #$0D      ; vert clair = propulseur\n  STA $F0       ; variable couleur_propulseur\n\n  LDA $F0       ; recharge depuis variable\n  ???           ; propulseur haut-gauche → $0200\n  ???           ; propulseur haut-droit  → $021F\n  ???           ; propulseur bas-gauche  → $05E0\n  ???           ; propulseur bas-droit   → $05FF\n\n  BRK\n```\n\nComplète les 4 `???`.\n\n_🚀 L'Arène 1 est complète. La fusée décolle !_",
+      "template": ";  FUSÉE — BOSS / DÉCOLLAGE\n;  4 propulseurs dans les 4 coins\n\n  LDA #$07 : STA $0210 : LDA #$07 : STA $0230\n  LDA #$01 : STA $0250 : LDA #$07 : STA $0270\n  LDA #$07 : STA $0290 : LDA #$02 : STA $024F\n  LDA #$02 : STA $0251\n\n  LDA #$0D\n  STA $F0    ; couleur_propulseur\n\n  LDA $F0\n  ???        ; haut-gauche → $0200\n  ???        ; haut-droit  → $021F\n  ???        ; bas-gauche  → $05E0\n  ???        ; bas-droit   → $05FF\n\n  BRK\n",
       "assertions": [
         {
           "type": "memory",
-          "address": 16,
-          "value": 8,
-          "failMsg": "$10 devrait contenir $08 (niveau du thermomètre)"
+          "address": 512,
+          "value": 13,
+          "failMsg": "Propulseur haut-gauche ($0200) devrait valoir $0D."
         },
         {
-          "type": "sequence",
-          "address": 512,
-          "values": [
-            6,
-            6,
-            6,
-            6,
-            2,
-            2,
-            2,
-            2
-          ],
-          "failMsg": "8 pixels : 4 bleus ($06) puis 4 rouges ($02)"
+          "type": "memory",
+          "address": 543,
+          "value": 13,
+          "failMsg": "Propulseur haut-droit ($021F) devrait valoir $0D."
+        },
+        {
+          "type": "memory",
+          "address": 1504,
+          "value": 13,
+          "failMsg": "Propulseur bas-gauche ($05E0) devrait valoir $0D."
+        },
+        {
+          "type": "memory",
+          "address": 1535,
+          "value": 13,
+          "failMsg": "Propulseur bas-droit ($05FF) devrait valoir $0D."
         }
       ],
       "maxCycles": 500,
       "hints": [
         {
-          "text": "STA $0204, STA $0205, STA $0206, STA $0207 pour les 4 pixels rouges."
+          "text": "STA $0200 et STA $021F pour les coins du haut."
+        },
+        {
+          "text": "$05E0 = $0200 + 31 lignes × 32 pixels = $0200 + $03E0. $05FF = $05E0 + $1F."
         }
       ],
       "meta": {
+        "concepts": [
+          "LDA",
+          "STA",
+          "Zero Page",
+          "Synthèse Arène 1"
+        ],
+        "estimatedMinutes": 15,
         "zaks": {
           "chapter": "Chapitre 3",
-          "page": 60,
-          "topic": "Représentation visuelle de données"
+          "page": 55,
+          "topic": "Adresses absolues"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "arena": 2,
+      "arena_name": "La Calculatrice",
+      "title": "Comparaison des Systèmes",
+      "description": "## 📡 Théorie — CMP et les flags\n\n`CMP` compare A avec une valeur **sans modifier A** :\n\n```asm\nCMP #$40\n```\n- **Z=1** si A = $40 → `BEQ` (Branch if Equal)\n- **C=1** si A ≥ $40 → `BCS` (Branch if Carry Set)\n- **C=0** si A < $40 → `BCC` (Branch if Carry Clear)\n\nC'est une soustraction fantôme : le résultat est calculé mais jeté.\n\n---\n\n## 🎯 Mission — Diagnostic inversé\n\nLe tableau de bord vérifie chaque jauge. Si valeur ≥ seuil → vert. Sinon → rouge. Mais le technicien a **inversé tous les BCC et BCS**. Les voyants s'allument à l'envers !\n\n```asm\n;  TABLEAU DE BORD — Module 1/6 — DIAGNOSTIC INVERSÉ\n\n; Bouclier : $60 >= $50 → VERT\n  LDA #$60 : CMP #$50\n  BCC BOUCLIER_OK  ; BUG — C=1 si >=, devrait être BCS\n  LDA #$02 : STA $0204 : JMP S1\nBOUCLIER_OK:\n  LDA #$05 : STA $0204\nS1:\n\n; Oxygène : $30 < $50 → ROUGE\n  LDA #$30 : CMP #$50\n  BCS OXYGENE_OK   ; BUG — C=0 si <, devrait être BCC\n  LDA #$02 : STA $0205 : JMP S2\nOXYGENE_OK:\n  LDA #$05 : STA $0205\nS2:\n  BRK\n```",
+      "template": ";  TABLEAU DE BORD — Module 1/6 — DIAGNOSTIC INVERSÉ\n\n; Bouclier : $60 >= $50 → VERT ($05)\n  LDA #$60 : CMP #$50\n  BCC BOUCLIER_OK  ; BUG — inverse moi\n  LDA #$02 : STA $0204 : JMP S1\nBOUCLIER_OK:\n  LDA #$05 : STA $0204\nS1:\n\n; Oxygène : $30 < $50 → ROUGE ($02)\n  LDA #$30 : CMP #$50\n  BCS OXYGENE_OK   ; BUG — inverse moi\n  LDA #$02 : STA $0205 : JMP S2\nOXYGENE_OK:\n  LDA #$05 : STA $0205\nS2:\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 516,
+          "value": 5,
+          "failMsg": "$60 >= $50 → bouclier VERT ($05). BCS saute si Carry=1 (≥ seuil)."
         },
+        {
+          "type": "memory",
+          "address": 517,
+          "value": 2,
+          "failMsg": "$30 < $50 → oxygène ROUGE ($02). BCC saute si Carry=0 (< seuil)."
+        }
+      ],
+      "maxCycles": 500,
+      "hints": [
+        {
+          "text": "BCS saute si A >= valeur (Carry=1). BCC saute si A < valeur (Carry=0)."
+        },
+        {
+          "text": "Bouclier OK : valeur $60 >= seuil $50 → Carry=1 → BCS. Oxygène KO : $30 < $50 → Carry=0 → BCC va vers OK."
+        }
+      ],
+      "meta": {
         "concepts": [
-          "STA",
-          "LDA",
-          "Représentation visuelle",
-          "Séquence"
+          "CMP",
+          "BCC",
+          "BCS",
+          "Flags"
         ],
-        "estimatedMinutes": 15
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 6",
+          "page": 98,
+          "topic": "CMP et branchements"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "arena": 2,
+      "arena_name": "La Calculatrice",
+      "title": "Les Seuils Critiques",
+      "description": "## 📡 Théorie — BEQ et BNE\n\n`BEQ` (Branch if Equal) saute si **Z=1** — le dernier résultat était zéro.\n`BNE` (Branch if Not Equal) saute si **Z=0** — le résultat n'était pas zéro.\n\n```asm\n  LDA $10 : CMP #$FF\n  BEQ PLEIN   ; saute si A = $FF\n  ; ici si pas plein\nPLEIN:\n  ; ici si plein\n```\n\n---\n\n## 🎯 Mission — Labels du réservoir confondus\n\nLe réservoir de plasma a 3 états : `$00` = urgence rouge, `$FF` = plein vert, autre = orange. Le code de vérification a **les labels de destination échangés** dans les deux BEQ.\n\n```asm\n;  TABLEAU DE BORD — Module 2/6 — LABELS CONFONDUS\n\n  LDA #$00   ; niveau = vide = urgence !\n\n  CMP #$00\n  BEQ PLEIN     ; BUG — $00 → devrait aller vers URGENCE\n  CMP #$FF\n  BEQ URGENCE   ; BUG — $FF → devrait aller vers PLEIN\n  LDA #$08 : STA $0206 : JMP FIN\n\nPLEIN:\n  LDA #$05 : STA $0206 : JMP FIN\nURGENCE:\n  LDA #$02 : STA $0206\nFIN:\n  BRK\n```",
+      "template": ";  TABLEAU DE BORD — Module 2/6 — LABELS CONFONDUS\n\n  LDA #$00   ; vide = urgence\n\n  CMP #$00\n  BEQ PLEIN     ; BUG — échange les destinations\n  CMP #$FF\n  BEQ URGENCE   ; BUG — échange les destinations\n  LDA #$08 : STA $0206 : JMP FIN\n\nPLEIN:\n  LDA #$05 : STA $0206 : JMP FIN\nURGENCE:\n  LDA #$02 : STA $0206\nFIN:\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 518,
+          "value": 2,
+          "failMsg": "Niveau $00 = urgence → rouge ($02). BEQ doit sauter vers URGENCE quand A=0."
+        }
+      ],
+      "maxCycles": 300,
+      "hints": [
+        {
+          "text": "CMP #$00 avec A=$00 → Z=1 → BEQ saute. Ce saut doit aller vers URGENCE, pas PLEIN."
+        },
+        {
+          "text": "Échange les deux labels : BEQ URGENCE et BEQ PLEIN."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "BEQ",
+          "BNE",
+          "CMP",
+          "Labels"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 6",
+          "page": 95,
+          "topic": "BEQ — Branch if Equal"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "arena": 2,
+      "arena_name": "La Calculatrice",
+      "title": "La Boucle de Calibration",
+      "description": "## 📡 Théorie — Boucle CPX/BNE\n\n```asm\n  LDX #$06\nBOUCLE:\n  ; faire quelque chose\n  DEX\n  BNE BOUCLE   ; tant que X ≠ 0\n```\n\n`BNE` reboucle tant que Z=0. Dès que `DEX` passe X à 0, Z=1 et BNE ne saute plus. Résultat : **6 tours exactement**.\n\n---\n\n## 🎯 Mission — Boucle cassée\n\nLe code doit allumer **6 jauges de calibration** en orange. Mais le compteur est **à 10 au lieu de 6** et le **DEX est oublié** — boucle infinie !\n\n```asm\n;  TABLEAU DE BORD — Module 3/6 — BOUCLE CASSÉE\n\n  LDA #$08   ; orange\n  LDX #$0A   ; BUG 1 — devrait être #$06\n\nCALIB:\n  STA $0207,X\n  ; BUG 2 — DEX manquant ici\n  BNE CALIB\n\n  BRK\n```",
+      "template": ";  TABLEAU DE BORD — Module 3/6 — BOUCLE CASSÉE\n\n  LDA #$08   ; orange\n  LDX #$0A   ; BUG 1 — mauvais compteur\n\nCALIB:\n  STA $0207,X\n  ; BUG 2 — instruction manquante\n  BNE CALIB\n\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 520,
+          "value": 8,
+          "failMsg": "Jauge 1 ($0208) = orange ($08)."
+        },
+        {
+          "type": "memory",
+          "address": 525,
+          "value": 8,
+          "failMsg": "Jauge 6 ($020D) = orange ($08). Exactement 6 tours."
+        },
+        {
+          "type": "memory",
+          "address": 526,
+          "value": 0,
+          "failMsg": "$020E doit rester 0 — la boucle ne doit PAS écrire là."
+        }
+      ],
+      "maxCycles": 500,
+      "hints": [
+        {
+          "text": "BUG 1 : 6 jauges → LDX #$06. BUG 2 : sans DEX, X ne change jamais → boucle infinie. Ajoute DEX avant BNE."
+        },
+        {
+          "text": "La boucle écrit à $0207+X. X va de 6 à 1, soit les adresses $020D à $0208."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "Boucle",
+          "BNE",
+          "DEX",
+          "Adressage indexé"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 6",
+          "page": 95,
+          "topic": "Boucle comptée"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "arena": 2,
+      "arena_name": "La Calculatrice",
+      "title": "Le Multiplicateur de Puissance",
+      "description": "## 📡 Théorie — ASL : multiplier par 2\n\n`ASL` (Arithmetic Shift Left) décale tous les bits vers la gauche = **× 2** :\n\n```asm\n  LDA #$04  ; 4\n  ASL       ; 8  (× 2)\n  ASL       ; 16 (× 4)\n  ASL       ; 32 (× 8)\n```\n\n5 fois `ASL` = **× 32**. C'est comment calculer l'adresse de début d'une ligne d'écran (32 pixels de large).\n\n---\n\n## 🎯 Mission — LSR au lieu de ASL\n\nLe calcul d'adresse multiplie le numéro de ligne par 32. Mais quelqu'un a remplacé tous les `ASL` par des `LSR` (qui **divisent** par 2 au lieu de multiplier). L'adresse calculée est 1024 fois trop petite !\n\n```asm\n;  TABLEAU DE BORD — Module 4/6 — DÉCALAGES INVERSÉS\n\n; Ligne 4 → offset = 4 × 32 = $80 → adresse = $0280\n  LDA #$04\n  LSR : LSR : LSR : LSR : LSR  ; BUG — 5× LSR au lieu de 5× ASL\n  CLC : ADC #$00 : STA $F0\n  LDA #$02 : STA $F1\n\n  LDA #$0D : LDY #$00 : STA ($F0),Y\n  BRK\n```",
+      "template": ";  TABLEAU DE BORD — Module 4/6 — DÉCALAGES INVERSÉS\n\n; Ligne 4 × 32 = $80 → adresse $0280\n  LDA #$04\n  LSR : LSR : LSR : LSR : LSR  ; BUG — remplace les LSR par ASL\n  CLC : ADC #$00 : STA $F0\n  LDA #$02 : STA $F1\n\n  LDA #$0D : LDY #$00 : STA ($F0),Y\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 640,
+          "value": 13,
+          "failMsg": "Pixel ligne 4 ($0280) devrait être vert clair ($0D). 4 × 32 = $80 → adresse = $0200 + $80 = $0280."
+        }
+      ],
+      "maxCycles": 300,
+      "hints": [
+        {
+          "text": "ASL × la gauche = ×2. LSR × la droite = ÷2. Remplace chaque LSR par ASL."
+        },
+        {
+          "text": "4 × 32 = 128 = $80. $0200 + $80 = $0280."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "ASL",
+          "LSR",
+          "Décalage binaire",
+          "Calcul adresse"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 5",
+          "page": 88,
+          "topic": "ASL/LSR"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "arena": 2,
+      "arena_name": "La Calculatrice",
+      "title": "Les Masques de Sécurité",
+      "description": "## 📡 Théorie — AND, ORA, EOR\n\n```asm\nLDA #$B7 : AND #$0F  ; 10110111 & 00001111 = 00000111 = $07\nLDA #$30 : ORA #$0F  ; 00110000 | 00001111 = 00111111 = $3F\nLDA #$FF : EOR #$F0  ; 11111111 ^ 11110000 = 00001111 = $0F\n```\n\n`AND` masque (conserve), `ORA` fusionne (allume), `EOR` inverse (toggle).\n\n---\n\n## 🎯 Mission — Masques désactivés\n\nLes masques AND garantissent que les couleurs restent dans [0-15]. Mais **les masques AND ont tous été mis à `#$FF`** (ne change rien) et les **ORA à `#$00`** (inutiles).\n\n```asm\n;  TABLEAU DE BORD — Module 5/6 — MASQUES DÉSACTIVÉS\n\n  LDA #$A7\n  AND #$FF   ; BUG — devrait être AND #$0F (résultat : $07)\n  STA $0300\n\n  LDA #$30\n  ORA #$00   ; BUG — devrait être ORA #$07 (résultat : $37)\n  STA $0301\n\n  LDA #$C3\n  EOR #$FF   ; Correct : $C3 ^ $FF = $3C\n  AND #$0F   ; Correct : $3C & $0F = $0C\n  STA $0302\n\n  BRK\n```",
+      "template": ";  TABLEAU DE BORD — Module 5/6 — MASQUES DÉSACTIVÉS\n\n  LDA #$A7\n  AND #$FF   ; BUG 1 — change le masque\n  STA $0300\n\n  LDA #$30\n  ORA #$00   ; BUG 2 — change la valeur\n  STA $0301\n\n  LDA #$C3\n  EOR #$FF   ; correct\n  AND #$0F   ; correct\n  STA $0302\n\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 768,
+          "value": 7,
+          "failMsg": "$A7 AND $0F = $07. Change AND #$FF → AND #$0F."
+        },
+        {
+          "type": "memory",
+          "address": 769,
+          "value": 55,
+          "failMsg": "$30 ORA $07 = $37. Change ORA #$00 → ORA #$07."
+        },
+        {
+          "type": "memory",
+          "address": 770,
+          "value": 12,
+          "failMsg": "$C3 EOR $FF = $3C. $3C AND $0F = $0C. Ce bloc est correct."
+        }
+      ],
+      "maxCycles": 300,
+      "hints": [
+        {
+          "text": "AND #$0F conserve les 4 bits bas. AND #$FF est un masque neutre qui ne change rien."
+        },
+        {
+          "text": "$C3 EOR $FF : 11000011 XOR 11111111 = 00111100 = $3C. $3C AND $0F = $0C. Correct !"
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "AND",
+          "ORA",
+          "EOR",
+          "Masquage binaire"
+        ],
+        "estimatedMinutes": 12,
+        "zaks": {
+          "chapter": "Chapitre 5",
+          "page": 92,
+          "topic": "Opérations logiques"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "arena": 2,
+      "arena_name": "La Calculatrice",
+      "title": "⚔️ BOSS — Mise à Feu des Moteurs",
+      "description": "## 📡 Récapitulatif Arène 2\n\nTu maîtrises : `CMP` + `BEQ/BNE/BCC/BCS`, boucles `DEX/BNE`, `ASL/LSR`, `AND/ORA/EOR`.\n\n---\n\n## 🎯 Mission BOSS — 4 conditions pour le lancement\n\nLe vaisseau vérifie **4 conditions** avant de lancer. Le code est là mais **4 bugs différents** — un par condition.\n\n```asm\n;  TABLEAU DE BORD — BOSS / LANCEMENT\n\n; COND 1 : carburant $30 >= seuil $20 → VERT\n  LDA #$30 : CMP #$20\n  BCC CARB_OK  ; BUG — C=1 si >=, devrait être BCS\n  LDA #$02 : STA $0400 : JMP C2\nCARB_OK: LDA #$05 : STA $0400\nC2:\n\n; COND 2 : température $45 <= $50 → VERT\n  LDA #$45 : CMP #$50\n  BCS TEMP_OK  ; BUG — C=0 si <, devrait être BCC\n  LDA #$02 : STA $0401 : JMP C3\nTEMP_OK: LDA #$05 : STA $0401\nC3:\n\n; COND 3 : code $A5 == $A5 → VERT\n  LDA #$A5 : CMP #$A5\n  BNE CODE_OK  ; BUG — doit sauter si EGAL → BEQ\n  LDA #$02 : STA $0402 : JMP C4\nCODE_OK: LDA #$05 : STA $0402\nC4:\n\n; COND 4 : $CF AND $0F = $0F → VERT\n  LDA #$CF : AND #$0F : CMP #$0F\n  BNE SEC_OK   ; BUG — même bug que COND 3\n  LDA #$02 : STA $0403 : JMP FIN\nSEC_OK: LDA #$05 : STA $0403\nFIN:\n  BRK\n```\n\n_🚀 4 voyants verts = lancement autorisé. L'Arène 2 est complète !_",
+      "template": ";  TABLEAU DE BORD — BOSS / LANCEMENT\n\n; COND 1 : $30 >= $20\n  LDA #$30 : CMP #$20\n  BCC CARB_OK  ; BUG 1\n  LDA #$02 : STA $0400 : JMP C2\nCARB_OK: LDA #$05 : STA $0400\nC2:\n\n; COND 2 : $45 <= $50\n  LDA #$45 : CMP #$50\n  BCS TEMP_OK  ; BUG 2\n  LDA #$02 : STA $0401 : JMP C3\nTEMP_OK: LDA #$05 : STA $0401\nC3:\n\n; COND 3 : $A5 == $A5\n  LDA #$A5 : CMP #$A5\n  BNE CODE_OK  ; BUG 3\n  LDA #$02 : STA $0402 : JMP C4\nCODE_OK: LDA #$05 : STA $0402\nC4:\n\n; COND 4 : $CF AND $0F = $0F\n  LDA #$CF : AND #$0F : CMP #$0F\n  BNE SEC_OK   ; BUG 4\n  LDA #$02 : STA $0403 : JMP FIN\nSEC_OK: LDA #$05 : STA $0403\nFIN:\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 1024,
+          "value": 5,
+          "failMsg": "Carburant : $30 >= $20 → BCS CARB_OK."
+        },
+        {
+          "type": "memory",
+          "address": 1025,
+          "value": 5,
+          "failMsg": "Température : $45 < $50 → BCC TEMP_OK."
+        },
+        {
+          "type": "memory",
+          "address": 1026,
+          "value": 5,
+          "failMsg": "Code : $A5 = $A5 → BEQ CODE_OK."
+        },
+        {
+          "type": "memory",
+          "address": 1027,
+          "value": 5,
+          "failMsg": "Sécurité : $0F = $0F → BEQ SEC_OK."
+        }
+      ],
+      "maxCycles": 1000,
+      "hints": [
+        {
+          "text": "COND 1 : A >= valeur → Carry=1 → BCS. COND 2 : A < valeur → Carry=0 → BCC."
+        },
+        {
+          "text": "COND 3 et 4 : A = valeur → Z=1 → BEQ. BNE saute quand Z=0 (différent)."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "CMP",
+          "BEQ",
+          "BNE",
+          "BCC",
+          "BCS",
+          "Synthèse Arène 2"
+        ],
+        "estimatedMinutes": 20,
+        "zaks": {
+          "chapter": "Chapitre 6",
+          "page": 101,
+          "topic": "Synthèse branchements"
+        }
       }
     },
     {
       "id": 13,
-      "title": "La Première Boucle",
-      "description": "## 🟡 Arène 3 — La Machine à Répéter\n\nStructure classique :\n```\n  LDX #$00\nBOUCLE:\n  STA $0200,X   ; écriture indexée\n  INX\n  CPX #$20      ; X = 32 ?\n  BNE BOUCLE    ; non → continue\n```\n`STA $0200,X` écrit à l'adresse `$0200 + X`. `CPX` compare X. `BNE` saute si Z=0.\n\n## Mission\nRemplis les 32 premiers pixels de la ligne 1 (`$0200`-`$021F`) avec du blanc (`$01`).",
-      "template": "; Défi 13 — La Première Boucle\n\n  LDA #$01     ; blanc\n  LDX #$00     ; compteur\n\nBOUCLE:\n  STA $0200,X  ; pixel X de la ligne 1\n  INX\n  CPX #$20     ; 32 pixels ?\n  BNE BOUCLE\n\n\n  BRK\n",
+      "arena": 3,
+      "arena_name": "La Machine à Répéter",
+      "title": "La Première Constellation",
+      "description": "## 📡 Théorie — Boucle INX/CPX/BNE\n\n```asm\n  LDA #$01\n  LDX #$00\nBOUCLE:\n  STA $0200,X  ; écrit à $0200 + X\n  INX\n  CPX #$20     ; X atteint 32 ?\n  BNE BOUCLE   ; non → continue\n```\n\n`STA $0200,X` = adressage indexé : l'adresse réelle est `$0200 + X`. X est le curseur.\n\n---\n\n## 🎯 Mission — Constellation incorrecte\n\nLe programme trace 8 étoiles blanches. Mais **3 valeurs sont fausses** : la couleur, le compteur de départ, et la limite d'arrêt.\n\n```asm\n;  CIEL ÉTOILÉ — Module 1/6 — CONSTELLATION INCORRECTE\n\n  LDA #$07   ; BUG 1 — mauvaise couleur (devrait être $01 blanc)\n  LDX #$03   ; BUG 2 — mauvais départ (devrait être $00)\n\nGRANDE_OURSE:\n  STA $0208,X\n  INX\n  CPX #$10   ; BUG 3 — mauvaise limite (devrait être $08 pour 8 étoiles)\n  BNE GRANDE_OURSE\n\n  BRK\n```",
+      "template": ";  CIEL ÉTOILÉ — Module 1/6\n;  8 étoiles BLANCHES de $0208 à $020F\n\n  LDA #$07   ; BUG 1 — mauvaise couleur\n  LDX #$03   ; BUG 2 — mauvais départ\n\nGRANDE_OURSE:\n  STA $0208,X\n  INX\n  CPX #$10   ; BUG 3 — mauvaise limite\n  BNE GRANDE_OURSE\n\n  BRK\n",
+      "assertions": [
+        {
+          "type": "sequence",
+          "address": 520,
+          "values": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "failMsg": "8 pixels de $0208 à $020F doivent être blancs ($01)."
+        },
+        {
+          "type": "memory",
+          "address": 528,
+          "value": 0,
+          "failMsg": "$0210 doit rester 0 — exactement 8 étoiles."
+        }
+      ],
+      "maxCycles": 500,
+      "hints": [
+        {
+          "text": "BUG 1 : blanc = $01. BUG 2 : démarrer à l'index 0 → LDX #$00. BUG 3 : 8 étoiles depuis X=0 → CPX #$08."
+        },
+        {
+          "text": "La boucle écrit à $0208 + X. X va de 0 à 7, soit 8 pixels. CPX #$08 arrête quand X = 8."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "Boucle INX/CPX/BNE",
+          "Adressage indexé"
+        ],
+        "estimatedMinutes": 8,
+        "zaks": {
+          "chapter": "Chapitre 6",
+          "page": 95,
+          "topic": "Boucle comptée"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "arena": 3,
+      "arena_name": "La Machine à Répéter",
+      "title": "L'Astuce des 256",
+      "description": "## 📡 Théorie — La boucle DEX/BNE pour 256 cases\n\nAstuce classique pour balayer **exactement 256 adresses** :\n\n```asm\n  LDX #$00\nBOUCLE:\n  STA $0300,X\n  DEX          ; X-- → déborde de $00 à $FF !\n  BNE BOUCLE   ; s'arrête quand X revient à $00\n; 256 tours : $00, $FF, $FE, ..., $01, $00\n```\n\nContre-intuitif mais magistral : `DEX` depuis `$00` donne `$FF` grâce au débordement.\n\n---\n\n## 🎯 Mission — Page incomplète\n\nLe code doit peindre **256 pixels** en cyan sur la page `$03xx`. Mais il utilise `INX` au lieu de `DEX`, et une condition d'arrêt qui stoppe à 128 pixels.\n\n```asm\n;  CIEL ÉTOILÉ — Module 2/6 — PAGE INCOMPLÈTE\n\n  LDA #$03   ; cyan\n  LDX #$00\n\nVOIE_LACTEE:\n  STA $0300,X\n  INX          ; BUG 1 — devrait être DEX\n  CPX #$80     ; BUG 2 — arrêt à 128, supprime cette ligne\n  BNE VOIE_LACTEE\n\n  BRK\n```",
+      "template": ";  CIEL ÉTOILÉ — Module 2/6\n;  256 pixels CYAN sur la page $03xx\n\n  LDA #$03   ; cyan\n  LDX #$00\n\nVOIE_LACTEE:\n  STA $0300,X\n  INX        ; BUG 1 — remplace par DEX\n  CPX #$80   ; BUG 2 — supprime cette ligne\n  BNE VOIE_LACTEE\n\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 768,
+          "value": 3,
+          "failMsg": "$0300 devrait être cyan ($03)."
+        },
+        {
+          "type": "memory",
+          "address": 895,
+          "value": 3,
+          "failMsg": "$037F devrait être cyan — 256 pixels nécessaires."
+        },
+        {
+          "type": "memory",
+          "address": 1023,
+          "value": 3,
+          "failMsg": "$03FF devrait être cyan — tous les 256 pixels."
+        }
+      ],
+      "maxCycles": 5000,
+      "hints": [
+        {
+          "text": "Avec DEX et BNE : X=0 → DEX → $FF → $FE → ... → $01 → $00 (Z=1, stop). 256 tours."
+        },
+        {
+          "text": "Version correcte : LDA #$03 / LDX #$00 / BOUCLE: STA $0300,X / DEX / BNE BOUCLE"
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "DEX",
+          "BNE",
+          "Débordement",
+          "Boucle 256"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 3",
+          "page": 65,
+          "topic": "Boucle DEX"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "arena": 3,
+      "arena_name": "La Machine à Répéter",
+      "title": "La Palette Stellaire",
+      "description": "## 📡 Théorie — Tableau .byte et lecture indexée\n\n```asm\nCOULEURS:\n  .byte $01, $03, $07, $09   ; 4 couleurs\n\n  LDA COULEURS,X   ; charge COULEURS[X] dans A\n```\n\nC'est un tableau en lecture. `LDA COULEURS,X` accède à l'élément à l'index X.\n\n---\n\n## 🎯 Mission — Palette corrompue\n\nLe programme lit une palette de 8 couleurs et les peint. Mais **la lecture utilise LDX au lieu de LDA** (ce qui écrase l'index !) et **une couleur $00 s'est glissée** dans la palette à la place de $06.\n\n```asm\n;  CIEL ÉTOILÉ — Module 3/6 — PALETTE CORROMPUE\n\n  LDX #$00\nETOILES:\n  LDX PALETTE,X  ; BUG 1 — devrait être LDA PALETTE,X\n  STA $0400,X\n  INX : CPX #$08 : BNE ETOILES\n  BRK\n\nPALETTE:\n  .byte $01, $03, $05, $00, $07, $09, $0B, $0D\n;                        ^^ BUG 2 — $00 devrait être $06\n```",
+      "template": ";  CIEL ÉTOILÉ — Module 3/6\n;  Palette 8 couleurs sur la page $04xx\n\n  LDX #$00\nETOILES:\n  LDX PALETTE,X  ; BUG 1 — mauvaise instruction\n  STA $0400,X\n  INX : CPX #$08 : BNE ETOILES\n  BRK\n\nPALETTE:\n  .byte $01, $03, $05, $00, $07, $09, $0B, $0D\n;                        ^^ BUG 2 — corrige cette valeur\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 1024,
+          "value": 1,
+          "failMsg": "Pixel 0 = $01 (blanc)."
+        },
+        {
+          "type": "memory",
+          "address": 1027,
+          "value": 6,
+          "failMsg": "Pixel 3 = $06 (bleu). Le $00 corrompu doit être $06."
+        },
+        {
+          "type": "memory",
+          "address": 1031,
+          "value": 13,
+          "failMsg": "Pixel 7 = $0D (vert clair)."
+        }
+      ],
+      "maxCycles": 500,
+      "hints": [
+        {
+          "text": "BUG 1 : LDX charge dans X et écrase l'index. LDA charge dans A — correct pour STA ensuite."
+        },
+        {
+          "text": "BUG 2 : la 4ème couleur (index 3) est $00 mais devrait être $06 (bleu)."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          ".byte",
+          "LDA tableau,X",
+          "Tableau"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 3",
+          "page": 71,
+          "topic": "Directive .byte"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "arena": 3,
+      "arena_name": "La Machine à Répéter",
+      "title": "Les Lignes de l'Univers",
+      "description": "## 📡 Théorie — Boucles imbriquées avec pointeur\n\nPour peindre plusieurs lignes, on incrémente l'octet haut du pointeur :\n\n```asm\n  LDA #$00 : STA $F0  ; bas\n  LDA #$02 : STA $F1  ; haut → pointe vers $02xx\n\n  LDY #$00 : LDA #$06\nBOUCLE_INT:\n  STA ($F0),Y\n  INY : BNE BOUCLE_INT  ; 256 pixels\n\n  INC $F1  ; passe à la page suivante ($03xx)\n```\n\n---\n\n## 🎯 Mission — Boucle externe cassée\n\nLe programme doit peindre **4 lignes** en bleu. Mais le **pointeur est initialisé à l'envers** et **Y n'est pas remis à 0** avant la deuxième page.\n\n```asm\n;  CIEL ÉTOILÉ — Module 4/6 — BOUCLE EXTERNE CASSÉE\n\n  LDA #$03 : STA $F0  ; BUG 1 — octet HAUT en $F0 (devrait être en $F1)\n  LDA #$40 : STA $F1  ; BUG 1 — octet BAS en $F1 (devrait être en $F0)\n  ; Doit pointer vers $0340\n\n  LDA #$06 : LDY #$04  ; BUG 2 — Y=4 pour l'externe (devrait être LDX)\n\nEXT:\n  ; [boucle interne 256 pixels]\n  LDY #$00\nINT: STA ($F0),Y : INY : BNE INT\n  INC $F1\n  ; BUG 3 — Y n'est pas remis à 0 ici avant EXT suivant\n  DEY  ; BUG 2 — on utilisait Y comme compteur externe !\n  BNE EXT\n  BRK\n```",
+      "template": ";  CIEL ÉTOILÉ — Module 4/6\n;  4 pages bleues de $0300 à $06FF\n\n  LDA #$03 : STA $F0  ; BUG 1 — pointeur inversé\n  LDA #$00 : STA $F1  ; BUG 1 — pointeur inversé\n\n  LDA #$06   ; bleu\n  LDX #$04   ; 4 pages\n\nEXT:\n  LDY #$00\nINT:\n  STA ($F0),Y\n  INY : BNE INT\n\n  INC $F1    ; page suivante\n  DEX\n  BNE EXT\n\n  BRK\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 768,
+          "value": 6,
+          "failMsg": "Page 1 ($0300) = bleu ($06). Pointeur : $F0=$00, $F1=$03."
+        },
+        {
+          "type": "memory",
+          "address": 1023,
+          "value": 6,
+          "failMsg": "Dernier pixel page 1 ($03FF) = bleu."
+        },
+        {
+          "type": "memory",
+          "address": 1024,
+          "value": 6,
+          "failMsg": "Page 2 ($0400) = bleu. INC $F1 passe à la page suivante."
+        },
+        {
+          "type": "memory",
+          "address": 1535,
+          "value": 6,
+          "failMsg": "Page 4 ($05FF) = bleu. 4 pages au total."
+        }
+      ],
+      "maxCycles": 50000,
+      "hints": [
+        {
+          "text": "BUG 1 : l'adresse $0300 → octet bas = $00 en $F0, octet haut = $03 en $F1."
+        },
+        {
+          "text": "La version correcte utilise LDX #$04 pour le compteur externe et DEX/BNE pour la boucle externe."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "Boucles imbriquées",
+          "Pointeur indirect",
+          "INC"
+        ],
+        "estimatedMinutes": 15,
+        "zaks": {
+          "chapter": "Chapitre 4",
+          "page": 79,
+          "topic": "Boucle avec pointeur"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "arena": 3,
+      "arena_name": "La Machine à Répéter",
+      "title": "L'Aléatoire Cosmique",
+      "description": "## 📡 Théorie — $FE : générateur aléatoire\n\n`$FE` retourne un octet pseudo-aléatoire à chaque lecture :\n\n```asm\n  LDA $FE     ; valeur entre $00 et $FF\n  AND #$0F    ; force dans [0-15] pour la palette\n  STA $0500\n```\n\n---\n\n## 🎯 Mission — Nébuleuse appauvrie\n\nLe programme crée 256 pixels aléatoires sur `$0500`. Mais le masque `AND` est **trop restrictif** (1 bit → 2 couleurs) et la boucle **s'arrête à 128 pixels**.\n\n```asm\n;  CIEL ÉTOILÉ — Module 5/6 — NÉBULEUSE APPAUVRIE\n\n  LDX #$00\nNEBULEUSE:\n  LDA $FE\n  AND #$01    ; BUG 1 — ne donne que 0 ou 1 (devrait être #$0F)\n  STA $0500,X\n  INX\n  CPX #$80    ; BUG 2 — arrêt à 128 (devrait laisser DEX gérer)\n  BNE NEBULEUSE\n\n  BRK\n```",
+      "template": ";  CIEL ÉTOILÉ — Module 5/6\n;  256 pixels aléatoires sur $0500-$05FF\n\n  LDX #$00\nNEBULEUSE:\n  LDA $FE\n  AND #$01    ; BUG 1 — masque trop restrictif\n  STA $0500,X\n  INX\n  CPX #$80    ; BUG 2 — arrêt trop tôt\n  BNE NEBULEUSE\n\n  BRK\n",
+      "assertions": [
+        {
+          "type": "register",
+          "register": "X",
+          "value": 0,
+          "failMsg": "X doit valoir 0 après 256 tours (débordement INX, ou utilise DEX/BNE)."
+        }
+      ],
+      "maxCycles": 5000,
+      "hints": [
+        {
+          "text": "BUG 1 : AND #$0F garde 4 bits → valeurs 0 à 15 = toutes les couleurs de la palette."
+        },
+        {
+          "text": "BUG 2 : Pour 256 pixels avec INX, remplace CPX #$80 / BNE par DEX / BNE. Ou garde INX mais CPX #$00."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "LDA $FE",
+          "AND",
+          "Masquage",
+          "Boucle 256"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 8",
+          "page": 130,
+          "topic": "Générateur $FE"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "arena": 3,
+      "arena_name": "La Machine à Répéter",
+      "title": "⚔️ BOSS — La Galaxie",
+      "description": "## 📡 Récapitulatif Arène 3\n\nTu maîtrises : boucles `INX/CPX/BNE` et `DEX/BNE`, tableaux `.byte`, boucles imbriquées, aléatoire `$FE`.\n\n---\n\n## 🎯 Mission BOSS — 4 zones, 4 bugs\n\nLa galaxie combine 4 zones. **Chaque zone a un bug spécifique**.\n\n```asm\n;  CIEL ÉTOILÉ — BOSS / GALAXIE\n\n; ZONE 1 ($0200) : 32 étoiles blanches\n  LDA #$01 : LDX #$00\nZ1: STA $0200,X : INX : CPX #$40 : BNE Z1  ; BUG 1 — $40=64, devrait être $20\n\n; ZONE 2 ($0300) : 256 pixels cyan via DEX\n  LDA #$03 : LDX #$00\nZ2: STA $0300,X : INX : BNE Z2             ; BUG 2 — INX au lieu de DEX\n\n; ZONE 3 ($0400) : palette 8 couleurs\n  LDX #$00\nZ3: LDA GAL_PAL,X : STA $0400,X : INX : CPX #$08 : BNE Z3\n\n; ZONE 4 ($0500) : bruit 256 pixels\n  LDX #$00\nZ4: LDA $FE : AND #$F0 : STA $0500,X : DEX : BNE Z4  ; BUG 3 — AND #$F0\n\n  BRK\n\nGAL_PAL:\n  .byte $01,$03,$05,$07,$09,$00,$0D,$0F  ; BUG 4 — $00 devrait être $0B\n```\n\n_🌌 L'Arène 3 est complète quand la galaxie brille !_",
+      "template": ";  CIEL ÉTOILÉ — BOSS / GALAXIE\n\n; ZONE 1 : 32 étoiles blanches\n  LDA #$01 : LDX #$00\nZ1: STA $0200,X : INX : CPX #$40 : BNE Z1  ; BUG 1\n\n; ZONE 2 : 256 pixels cyan\n  LDA #$03 : LDX #$00\nZ2: STA $0300,X : INX : BNE Z2             ; BUG 2\n\n; ZONE 3 : palette 8 couleurs\n  LDX #$00\nZ3: LDA GAL_PAL,X : STA $0400,X : INX : CPX #$08 : BNE Z3\n\n; ZONE 4 : bruit 256 pixels\n  LDX #$00\nZ4: LDA $FE : AND #$F0 : STA $0500,X : DEX : BNE Z4  ; BUG 3\n\n  BRK\n\nGAL_PAL:\n  .byte $01,$03,$05,$07,$09,$00,$0D,$0F  ; BUG 4\n",
       "assertions": [
         {
           "type": "sequence",
@@ -562,106 +882,163 @@
             1,
             1
           ],
-          "failMsg": "Les 32 pixels ($0200-$021F) devraient tous être blancs ($01)"
+          "failMsg": "Zone 1 : 32 étoiles blanches. CPX #$20 pour 32 pixels."
+        },
+        {
+          "type": "memory",
+          "address": 1023,
+          "value": 3,
+          "failMsg": "Zone 2 doit couvrir les 256 pixels. DEX au lieu de INX."
+        },
+        {
+          "type": "memory",
+          "address": 1029,
+          "value": 11,
+          "failMsg": "Zone 3 : palette[5] = $0B, pas $00."
+        },
+        {
+          "type": "register",
+          "register": "X",
+          "value": 0,
+          "failMsg": "Zone 4 : AND #$0F pour couleurs valides. DEX/BNE pour 256 pixels."
         }
       ],
-      "maxCycles": 1000,
+      "maxCycles": 20000,
       "hints": [
         {
-          "text": "Le code est déjà fourni ! Lance-le, observe le résultat, puis modifie la couleur ou le nombre de pixels."
+          "text": "BUG 1 : 32 pixels → CPX #$20. BUG 2 : 256 pixels → DEX au lieu de INX."
+        },
+        {
+          "text": "BUG 3 : AND #$F0 donne $00,$10,$20... hors palette → AND #$0F. BUG 4 : remplace $00 par $0B."
         }
       ],
       "meta": {
+        "concepts": [
+          "Boucles",
+          ".byte",
+          "DEX",
+          "$FE",
+          "Synthèse Arène 3"
+        ],
+        "estimatedMinutes": 20,
         "zaks": {
           "chapter": "Chapitre 6",
-          "page": 95,
-          "topic": "Boucle comptée avec CPX/BNE"
-        },
-        "concepts": [
-          "Boucle",
-          "INX",
-          "CPX",
-          "BNE",
-          "Adressage indexé"
-        ],
-        "estimatedMinutes": 10
+          "page": 108,
+          "topic": "Synthèse boucles"
+        }
       }
     },
     {
-      "id": 14,
-      "title": "La Boucle DEX — L'Astuce des 256",
-      "description": "## 256 itérations avec DEX\n\nAstuce classique : partir de `$00`, `DEX` donne `$FF`, puis `$FE`... `$01`, `$00`.\nLe flag Z s'active à `$00` → arrêt. **Résultat : 256 itérations.**\n\n⚠️ Le template contient un bug intentionnel. Trouve-le !\n\n## Mission\nEfface toute la Zero Page (`$00` à `$FF`) en écrivant `$00` partout.\n\nIl y a un bug dans le label : corrige-le pour que ça marche.",
-      "template": "; Défi 14 — Boucle DEX : effacer la Zero Page\n; ATTENTION : il y a un bug dans ce code. Trouve et corrige-le !\n\n  LDA #$00\n  LDX #$00\n\nEFFACE:\n  STA $00,X\n  DEX\n  BNE EFFACE_TYPO   ; <-- BUG ICI : le label est mal écrit\n\n  BRK\n",
+      "id": 19,
+      "arena": 4,
+      "arena_name": "L'Architecte",
+      "title": "La Première Porte",
+      "description": "## 📡 Théorie — JSR et RTS\n\n`JSR` appelle une fonction et sauvegarde l'adresse de retour. `RTS` revient.\n\n```asm\nMAIN:\n  JSR DESSINE   ; appel\n  JSR DESSINE   ; réutilisation !\n  BRK\n\nDESSINE:\n  LDA #$09 : STA $0300\n  RTS           ; OBLIGATOIRE — sans RTS, pas de retour\n```\n\nSans `RTS`, le CPU continue d'exécuter les instructions suivantes indéfiniment.\n\n---\n\n## 🎯 Mission — Fonction sans retour\n\nLe code dessine 3 colonnes de murs en appelant une fonction. Mais les **appels utilisent JMP au lieu de JSR** et le **RTS est manquant**. La fonction est appelée une fois mais jamais répétée.\n\n```asm\n;  DONJON 2D — Module 1/6 — FONCTION SANS RETOUR\n\nMAIN:\n  LDX #$00 : JMP DRAW_WALL  ; BUG 1 — devrait être JSR\n  LDX #$10 : JMP DRAW_WALL  ; BUG 1\n  LDX #$1F : JMP DRAW_WALL  ; BUG 1\n  BRK\n\nDRAW_WALL:\n  LDA #$09\n  STA $0200,X : STA $0220,X : STA $0240,X\n  STA $0260,X : STA $0280,X\n  ; BUG 2 — RTS manquant\n```",
+      "template": ";  DONJON 2D — Module 1/6\n;  3 colonnes de murs bruns\n\nMAIN:\n  LDX #$00 : JMP DRAW_WALL  ; BUG 1\n  LDX #$10 : JMP DRAW_WALL  ; BUG 1\n  LDX #$1F : JMP DRAW_WALL  ; BUG 1\n  BRK\n\nDRAW_WALL:\n  LDA #$09\n  STA $0200,X : STA $0220,X : STA $0240,X\n  STA $0260,X : STA $0280,X\n  ; BUG 2 — ajoute RTS\n",
       "assertions": [
         {
           "type": "memory",
-          "address": 0,
-          "value": 0,
-          "failMsg": "$00 devrait être à zéro"
+          "address": 512,
+          "value": 9,
+          "failMsg": "Mur col 0, ligne 0 ($0200) = brun ($09)."
         },
         {
           "type": "memory",
-          "address": 128,
-          "value": 0,
-          "failMsg": "$80 devrait être à zéro"
+          "address": 528,
+          "value": 9,
+          "failMsg": "Mur col 16 ($0210) = brun. JSR permet de revenir et d'appeler une 2ème fois."
         },
         {
           "type": "memory",
-          "address": 254,
-          "value": 0,
-          "failMsg": "$FE devrait être à zéro"
+          "address": 543,
+          "value": 9,
+          "failMsg": "Mur col 31 ($021F) = brun. 3 appels JSR nécessaires."
         }
       ],
-      "maxCycles": 5000,
+      "maxCycles": 500,
       "hints": [
         {
-          "text": "Le bug : BNE EFFACE_TYPO pointe vers un label qui n'existe pas. Change-le en BNE EFFACE."
+          "text": "JMP saute sans retour. JSR sauve le PC sur la pile et RTS le récupère."
         },
         {
-          "text": "STA $00,X écrit A à l'adresse X en Zero Page. DEX décrémente. BNE EFFACE reboucle si X != 0."
+          "text": "Remplace les 3 JMP par JSR. Ajoute RTS à la fin de DRAW_WALL."
         }
       ],
       "meta": {
-        "zaks": {
-          "chapter": "Chapitre 3",
-          "page": 65,
-          "topic": "Boucle DEX — balayage Zero Page"
-        },
         "concepts": [
-          "DEX",
-          "BNE",
-          "Zero Page indexé",
-          "Boucle 256"
+          "JSR",
+          "RTS",
+          "Sous-routine",
+          "JMP"
         ],
-        "estimatedMinutes": 10
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 7",
+          "page": 118,
+          "topic": "JSR/RTS"
+        }
       }
     },
     {
-      "id": 15,
-      "title": "Peindre Deux Lignes",
-      "description": "## Une ligne = 32 pixels\n\nLigne N commence à `$0200 + N × $20`.\n- Ligne 0 : `$0200`\n- Ligne 1 : `$0220`\n- Ligne 2 : `$0240`\n\nAvec `STA $0200,X` (ou `$0220,X`) et une boucle de 0 à 31, tu peins une ligne entière.\n\n## Mission\n- Ligne 0 (`$0200`-`$021F`) → violet `$04`\n- Ligne 1 (`$0220`-`$023F`) → orange `$08`",
-      "template": "; Défi 15 — Peindre deux lignes\n\n  LDA #$04\n  LDX #$00\nLIGNE0:\n  STA $0200,X\n  INX\n  CPX #$20\n  BNE LIGNE0\n\n  ; Ligne 1 : orange ($08)\n  LDA #$08\n  LDX #$00\nLIGNE1:\n  ; ...\n\n\n  BRK\n",
+      "id": 20,
+      "arena": 4,
+      "arena_name": "L'Architecte",
+      "title": "Le Trésor Caché",
+      "description": "## 📡 Théorie — PHA et PLA\n\nQuand une sous-routine écrase A, elle doit le sauvegarder sur la pile :\n\n```asm\nMA_ROUTINE:\n  PHA         ; sauvegarde A\n  LDA #$FF    ; écrase A\n  STA $0300\n  PLA         ; restaure A\n  RTS\n```\n\nLa pile fonctionne en **LIFO** : dernier entré, premier sorti.\n\n---\n\n## 🎯 Mission — A corrompu après l'appel\n\n`DRAW_TREASURE` dessine un trésor jaune mais écrase A. Le programme principal croit que A vaut encore `$04` (violet) après le retour — mais A vaut `$07` (jaune). **PHA et PLA manquent** dans la fonction.\n\n```asm\n;  DONJON 2D — Module 2/6 — A CORROMPU\n\nMAIN:\n  LDA #$04 : STA $0300   ; sol violet\n  JSR DRAW_TREASURE      ; écrase A !\n  STA $0301              ; BUG : A vaut $07 pas $04\n  STA $0302\n  BRK\n\nDRAW_TREASURE:\n  ; ??? PHA manquant\n  LDA #$07 : STA $031F   ; trésor jaune\n  ; ??? PLA manquant\n  RTS\n```",
+      "template": ";  DONJON 2D — Module 2/6\n;  Protéger A pendant DRAW_TREASURE\n\nMAIN:\n  LDA #$04 : STA $0300\n  JSR DRAW_TREASURE\n  STA $0301   ; A devrait encore valoir $04\n  STA $0302\n  BRK\n\nDRAW_TREASURE:\n  ; ajoute PHA ici\n  LDA #$07 : STA $031F\n  ; ajoute PLA ici\n  RTS\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 799,
+          "value": 7,
+          "failMsg": "Trésor ($031F) = jaune ($07)."
+        },
+        {
+          "type": "memory",
+          "address": 769,
+          "value": 4,
+          "failMsg": "$0301 = violet ($04). A doit être restauré après l'appel. Ajoute PHA/PLA dans DRAW_TREASURE."
+        },
+        {
+          "type": "memory",
+          "address": 770,
+          "value": 4,
+          "failMsg": "$0302 = violet ($04)."
+        }
+      ],
+      "maxCycles": 300,
+      "hints": [
+        {
+          "text": "PHA au début de DRAW_TREASURE sauvegarde A. PLA juste avant RTS le restaure."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "PHA",
+          "PLA",
+          "Pile LIFO",
+          "Protection registre"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 7",
+          "page": 115,
+          "topic": "PHA/PLA"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "arena": 4,
+      "arena_name": "L'Architecte",
+      "title": "Le Couloir Sans Fin",
+      "description": "## 📡 Théorie — Adressage indirect (zp),Y\n\n```asm\n  LDA #$40 : STA $F0   ; bas de l'adresse\n  LDA #$03 : STA $F1   ; haut → pointe vers $0340\n\n  LDY #$05\n  LDA #$04 : STA ($F0),Y  ; écrit à $0340 + 5 = $0345\n```\n\nEn changeant `$F1`, on change de page. C'est un pointeur `uint16_t*` en 6502.\n\n---\n\n## 🎯 Mission — Pointeur inversé\n\nLa fonction dessine un couloir via un pointeur. Mais le pointeur est **initialisé à l'envers** et **Y n'est pas remis à 0** avant la deuxième boucle.\n\n```asm\n;  DONJON 2D — Module 3/6 — POINTEUR INVERSÉ\n\n  LDA #$03 : STA $F0  ; BUG 1 — HAUT en $F0 (devrait être en $F1)\n  LDA #$40 : STA $F1  ; BUG 1 — BAS en $F1 (devrait être en $F0)\n  ; doit pointer vers $0340\n\n  LDA #$04 : LDY #$00\nCOULOIR1:\n  STA ($F0),Y : INY : CPY #$10 : BNE COULOIR1\n\n  INC $F1    ; ligne suivante\n  ; BUG 2 — Y n'est pas remis à 0\n\nCOULOIR2:\n  STA ($F0),Y : INY : CPY #$10 : BNE COULOIR2\n  BRK\n```",
+      "template": ";  DONJON 2D — Module 3/6\n;  Couloir violet via pointeur indirect\n\n  LDA #$03 : STA $F0  ; BUG 1 — pointeur inversé\n  LDA #$40 : STA $F1  ; BUG 1 — pointeur inversé\n\n  LDA #$04 : LDY #$00\nCOULOIR1:\n  STA ($F0),Y : INY : CPY #$10 : BNE COULOIR1\n\n  INC $F1\n  ; BUG 2 — remet Y à 0 ici\n\nCOULOIR2:\n  STA ($F0),Y : INY : CPY #$10 : BNE COULOIR2\n  BRK\n",
       "assertions": [
         {
           "type": "sequence",
-          "address": 512,
+          "address": 832,
           "values": [
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
-            4,
             4,
             4,
             4,
@@ -679,801 +1056,497 @@
             4,
             4
           ],
-          "failMsg": "Ligne 0 ($0200-$021F) devrait être violette ($04)"
+          "failMsg": "Couloir 1 ($0340-$034F) = violet ($04). Pointeur : $F0=$40, $F1=$03."
         },
         {
           "type": "sequence",
-          "address": 544,
+          "address": 1088,
           "values": [
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8,
-            8
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
           ],
-          "failMsg": "Ligne 1 ($0220-$023F) devrait être orange ($08)"
-        }
-      ],
-      "maxCycles": 2000,
-      "hints": [
-        {
-          "text": "Pour la ligne 1 : STA $0220,X dans la boucle au lieu de $0200,X."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 6",
-          "page": 105,
-          "topic": "Boucle de rendu"
-        },
-        "concepts": [
-          "Boucle",
-          "INX",
-          "CPX",
-          "BNE",
-          "Lignes écran"
-        ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 16,
-      "title": "Remplir l'Écran Complet",
-      "description": "## Quatre pages, quatre boucles\n\nL'écran = 4 pages de 256 pixels :\n- Page 1 : `$0200`-`$02FF`\n- Page 2 : `$0300`-`$03FF`\n- Page 3 : `$0400`-`$04FF`\n- Page 4 : `$0500`-`$05FF`\n\nUne boucle avec `INX` et `BNE` couvre exactement 256 pixels (X de 0 à 255, BNE s'arrête quand X déborde à 0).\n\n## Mission\nRemplis les 4 pages avec du brun (`$09`) en utilisant 4 boucles séparées.",
-      "template": "; Défi 16 — Remplir l'écran complet\n\n  LDA #$09   ; brun\n\n  ; Page 1 ($0200-$02FF)\n  LDX #$00\nP1: STA $0200,X\n  INX\n  BNE P1\n\n  ; Page 2 ($0300-$03FF)\n  LDX #$00\nP2: STA $0300,X\n  INX\n  BNE P2\n\n  ; Page 3 ($0400-$04FF)\n  ; ...\n\n  ; Page 4 ($0500-$05FF)\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 512,
-          "value": 9,
-          "failMsg": "$0200 devrait être brun ($09)"
-        },
-        {
-          "type": "memory",
-          "address": 767,
-          "value": 9,
-          "failMsg": "$02FF devrait être brun ($09)"
-        },
-        {
-          "type": "memory",
-          "address": 1279,
-          "value": 9,
-          "failMsg": "$04FF devrait être brun ($09)"
-        },
-        {
-          "type": "memory",
-          "address": 1535,
-          "value": 9,
-          "failMsg": "$05FF devrait être brun ($09)"
-        }
-      ],
-      "maxCycles": 10000,
-      "hints": [
-        {
-          "text": "Même structure pour P3 et P4 : LDX #$00 / label: STA $0400,X / INX / BNE label. (et $0500 pour P4)"
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 6",
-          "page": 108,
-          "topic": "Remplissage écran complet"
-        },
-        "concepts": [
-          "Boucle",
-          "INX",
-          "BNE",
-          "Pages mémoire"
-        ],
-        "estimatedMinutes": 15
-      }
-    },
-    {
-      "id": 17,
-      "title": "Tableau de Données — .byte",
-      "description": "## Les données dans le code\n\n`.byte` stocke des valeurs directement dans le programme. `LDA MON_TABLEAU,X` les lit.\n\n```asm\nBOUCLE:\n  LDA COULEURS,X\n  STA $0200,X\n  INX\n  CPX #$04\n  BNE BOUCLE\n  BRK\n\nCOULEURS:\n  .byte $02, $05, $06, $07\n```\n\n## Mission\nArc-en-ciel : définis un tableau de 8 couleurs et peins les 8 premiers pixels avec ces couleurs.",
-      "template": "; Défi 17 — Tableau de données\n\n  LDX #$00\nBOUCLE:\n  LDA PALETTE,X\n  STA $0200,X\n  INX\n  CPX #$08\n  BNE BOUCLE\n\n  BRK\n\nPALETTE:\n  .byte $01, $02, $03, $04, $05, $06, $07, $08\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 512,
-          "value": 1,
-          "failMsg": "Pixel $0200 devrait être $01"
-        },
-        {
-          "type": "memory",
-          "address": 513,
-          "value": 2,
-          "failMsg": "Pixel $0201 devrait être $02"
-        },
-        {
-          "type": "memory",
-          "address": 514,
-          "value": 3,
-          "failMsg": "Pixel $0202 devrait être $03"
-        },
-        {
-          "type": "memory",
-          "address": 519,
-          "value": 8,
-          "failMsg": "Pixel $0207 devrait être $08"
+          "failMsg": "Couloir 2 ($0440-$044F) = violet. Y doit être remis à 0 avant COULOIR2."
         }
       ],
       "maxCycles": 1000,
       "hints": [
         {
-          "text": "Le code est complet ! Lance-le et observe. Puis modifie les couleurs dans .byte pour créer ta propre palette."
+          "text": "BUG 1 : adresse $0340 → octet bas = $40 en $F0, octet haut = $03 en $F1."
+        },
+        {
+          "text": "BUG 2 : après INC $F1, ajoute LDY #$00 pour réinitialiser Y."
         }
       ],
       "meta": {
-        "zaks": {
-          "chapter": "Chapitre 3",
-          "page": 71,
-          "topic": "Directive .byte — données statiques"
-        },
         "concepts": [
-          ".byte",
-          "LDA indexé",
-          "Tableau de données"
+          "Adressage indirect (zp),Y",
+          "Pointeur 16-bit",
+          "INC"
         ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 18,
-      "title": "⚔️ Boss — Le Drapeau Tricolore",
-      "description": "## Boss de l'Arène 3\n\nL'écran fait 32 lignes. Divise-le en 3 bandes :\n- **Lignes 0-9** → Bleu `$06` ($0200-$033F, 320 pixels)\n- **Lignes 10-20** → Blanc `$01` ($0340-$0553, ~352 pixels)\n- **Lignes 21-31** → Rouge `$02` ($0560-$05FF, ~160 pixels)\n\nChaque ligne = `$20` octets. Ligne N = `$0200 + N × $20`.\n\n💡 Utilise plusieurs boucles — une par page ou partie de page.",
-      "template": "; Défi 18 — Boss : Drapeau Tricolore\n\n  ; BANDE BLEUE : $0200 a $033F (320 pixels)\n  LDA #$06\n  LDX #$00\nB1: STA $0200,X : INX : BNE B1   ; 256 pixels\n  LDX #$00\nB2: STA $0300,X : INX : CPX #$40 : BNE B2  ; 64 pixels\n\n  ; BANDE BLANCHE : $0340 a $054F (352 pixels)\n  LDA #$01\n  LDX #$40\nW1: STA $02C0,X : INX : BNE W1   ; de $0300 à $03FF (les 192 derniers)\n  ; ...\n\n  ; BANDE ROUGE : $0560 a $05FF (160 pixels)\n  LDA #$02\n  ; ...\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 512,
-          "value": 6,
-          "failMsg": "$0200 devrait être bleu ($06)"
-        },
-        {
-          "type": "memory",
-          "address": 831,
-          "value": 6,
-          "failMsg": "$033F devrait être bleu ($06)"
-        },
-        {
-          "type": "memory",
-          "address": 832,
-          "value": 1,
-          "failMsg": "$0340 devrait être blanc ($01)"
-        },
-        {
-          "type": "memory",
-          "address": 1359,
-          "value": 1,
-          "failMsg": "$054F devrait être blanc ($01)"
-        },
-        {
-          "type": "memory",
-          "address": 1376,
-          "value": 2,
-          "failMsg": "$0560 devrait être rouge ($02)"
-        },
-        {
-          "type": "memory",
-          "address": 1535,
-          "value": 2,
-          "failMsg": "$05FF devrait être rouge ($02)"
-        }
-      ],
-      "maxCycles": 20000,
-      "hints": [
-        {
-          "text": "Bande blanche : $0340-$03FF (192 px) + $0400-$04FF (256 px) + $0500-$054F (80 px). Bande rouge : $0560-$05FF."
-        },
-        {
-          "text": "Pour $0560 a $05FF (160 pixels) : LDX #$60 / label: STA $0500,X / INX / CPX #$00 / BNE label — non, utilise BNE avec CPX #$A0 pour 160 pixels depuis $0500."
-        }
-      ],
-      "meta": {
+        "estimatedMinutes": 15,
         "zaks": {
-          "chapter": "Chapitre 6",
-          "page": 110,
-          "topic": "Rendu zones rectangulaires"
-        },
-        "concepts": [
-          "Boucle",
-          "BNE",
-          "Calcul adresse",
-          "Rendu écran"
-        ],
-        "estimatedMinutes": 20
-      }
-    },
-    {
-      "id": 19,
-      "title": "JSR et RTS — Les Fonctions",
-      "description": "## 🟠 Arène 4 — L'Architecte\n\n**JSR** (Jump to Subroutine) appelle une fonction. **RTS** (Return from Subroutine) revient.\n\n```asm\nMAIN:\n  LDA #$02\n  LDX #$00\n  JSR PIXEL\n  LDX #$05\n  JSR PIXEL\n  BRK\n\nPIXEL:\n  STA $0200,X\n  RTS\n```\n\nJSR pousse le PC sur la pile. RTS le récupère.\n\n## Mission\nFonction `PEINT` : écrit la couleur en A à `$0200+X`. Appelle-la 4 fois.",
-      "template": "; Défi 19 — JSR / RTS\n\nMAIN:\n  LDA #$02 : LDX #$00 : JSR PEINT   ; rouge en 0\n  LDA #$05 : LDX #$05 : JSR PEINT   ; vert en 5\n  LDA #$07 : LDX #$0A : JSR PEINT   ; jaune en 10\n  LDA #$03 : LDX #$0F\n  ; 4ème appel...\n\n  BRK\n\nPEINT:\n  STA $0200,X\n  ; Retour à l'appelant...\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 512,
-          "value": 2,
-          "failMsg": "$0200 devrait être rouge ($02)"
-        },
-        {
-          "type": "memory",
-          "address": 517,
-          "value": 5,
-          "failMsg": "$0205 devrait être vert ($05)"
-        },
-        {
-          "type": "memory",
-          "address": 522,
-          "value": 7,
-          "failMsg": "$020A devrait être jaune ($07)"
-        },
-        {
-          "type": "memory",
-          "address": 527,
-          "value": 3,
-          "failMsg": "$020F devrait être cyan ($03)"
+          "chapter": "Chapitre 4",
+          "page": 76,
+          "topic": "Adressage indirect"
         }
-      ],
-      "maxCycles": 500,
-      "hints": [
-        {
-          "text": "JSR PEINT appelle la fonction. RTS à la fin de PEINT retourne à l'appelant."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 7",
-          "page": 118,
-          "topic": "JSR/RTS"
-        },
-        "concepts": [
-          "JSR",
-          "RTS",
-          "Sous-routine",
-          "Pile d'appel"
-        ],
-        "estimatedMinutes": 15
-      }
-    },
-    {
-      "id": 20,
-      "title": "La Pile — PHA et PLA",
-      "description": "## Protéger ses registres\n\n- `PHA` — pousse A sur la pile\n- `PLA` — récupère A depuis la pile\n- La pile est **LIFO** : dernier entré, premier sorti\n\n```asm\nFONCTION:\n  PHA         ; sauvegarde A\n  LDA #$FF    ; écrase A\n  STA $20\n  PLA         ; restaure A\n  RTS\n```\n\n## Mission\n`SWAP_COULEUR` reçoit une couleur dans A, fait un calcul interne, et la restaure. Complète-la.",
-      "template": "; Défi 20 — PHA / PLA\n\nMAIN:\n  LDA #$07       ; jaune — valeur précieuse\n  JSR SWAP_COULEUR\n  STA $0200      ; doit être jaune si A est bien restauré\n  BRK\n\nSWAP_COULEUR:\n  ; 1. Sauvegarde A sur la pile\n  ; ...\n\n  LDA #$00 : STA $10\n  LDA #$FF : STA $11   ; calcul interne\n\n  ; 2. Restaure A depuis la pile\n  ; ...\n\n  RTS\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "A",
-          "value": 7,
-          "failMsg": "A devrait valoir $07 (jaune) après retour de la fonction"
-        },
-        {
-          "type": "memory",
-          "address": 512,
-          "value": 7,
-          "failMsg": "$0200 devrait être jaune ($07)"
-        }
-      ],
-      "maxCycles": 500,
-      "hints": [
-        {
-          "text": "PHA avant le calcul. PLA avant RTS."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 7",
-          "page": 115,
-          "topic": "PHA/PLA"
-        },
-        "concepts": [
-          "PHA",
-          "PLA",
-          "Pile LIFO",
-          "Sauvegarde"
-        ],
-        "estimatedMinutes": 15
-      }
-    },
-    {
-      "id": 21,
-      "title": "ASL — Multiplier par 2",
-      "description": "## Décalages binaires\n\n- `ASL` (Shift Left) : × 2\n- `LSR` (Shift Right) : ÷ 2\n\n5 fois `ASL` = × 32 — parfait pour calculer l'adresse d'une ligne d'écran !\n\n**Ligne N → offset = N × 32 → 5× ASL**\n\n## Mission\nNuméro de ligne en `$10` (valeur `#$03`).\nMultiplie par 32 → résultat en `$11`.\nAllume le premier pixel de cette ligne en rouge.\n\nLigne 3 → offset `$60` → adresse `$0260`.",
-      "template": "; Défi 21 — ASL : adresse de ligne\n; Ligne 3 × 32 = $60 → adresse $0260\n\n  LDA #$03\n  STA $10\n\n  LDA $10\n  ASL\n  ASL\n  ASL\n  ASL\n  ASL          ; × 32 = $60\n  STA $11\n\n  ; Allume $0260 en rouge\n  LDA #$02\n  STA $0260\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 17,
-          "value": 96,
-          "failMsg": "$11 devrait contenir $60 (96) : 3 × 32 = 96"
-        },
-        {
-          "type": "memory",
-          "address": 608,
-          "value": 2,
-          "failMsg": "$0260 (ligne 3, col 0) devrait être rouge ($02)"
-        }
-      ],
-      "maxCycles": 200,
-      "hints": [
-        {
-          "text": "Le code est complet ! Comprends chaque ASL, puis essaie de changer le numéro de ligne en $10 et recalcule l'adresse."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 5",
-          "page": 88,
-          "topic": "ASL/LSR — calcul rapide"
-        },
-        "concepts": [
-          "ASL",
-          "LSR",
-          "Décalage",
-          "Multiplication rapide"
-        ],
-        "estimatedMinutes": 10
       }
     },
     {
       "id": 22,
-      "title": "L'Adressage Indirect",
-      "description": "## Le super-pouvoir du 6502\n\nL'adressage `($addr),Y` utilise un **pointeur** en Zero Page.\n\n```asm\n  LDA #$00 : STA $F0   ; octet bas\n  LDA #$02 : STA $F1   ; octet haut\n  ; $F0/$F1 pointe vers $0200\n\n  LDY #$05\n  LDA #$07\n  STA ($F0),Y   ; écrit à $0200 + 5 = $0205\n```\n\nL'adresse est en **little-endian** : octet bas en premier.\n\n## Mission\nUtilise un pointeur vers `$0310` pour écrire 4 pixels blancs à partir de cette adresse.",
-      "template": "; Défi 22 — Adressage indirect\n\n  LDA #$10 : STA $F0   ; octet bas de $0310\n  LDA #$03 : STA $F1   ; octet haut de $0310\n\n  LDA #$01   ; blanc\n\n  LDY #$00 : STA ($F0),Y   ; $0310\n  LDY #$01 : STA ($F0),Y   ; $0311\n  ; Écris aussi en Y=$02 et Y=$03\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 784,
-          "value": 1,
-          "failMsg": "$0310 devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 785,
-          "value": 1,
-          "failMsg": "$0311 devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 786,
-          "value": 1,
-          "failMsg": "$0312 devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 787,
-          "value": 1,
-          "failMsg": "$0313 devrait être blanc"
-        }
-      ],
-      "maxCycles": 500,
-      "hints": [
-        {
-          "text": "LDY #$02 : STA ($F0),Y pour $0312. LDY #$03 : STA ($F0),Y pour $0313."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 4",
-          "page": 76,
-          "topic": "Adressage indirect (zp),Y"
-        },
-        "concepts": [
-          "Adressage indirect",
-          "Pointeur 16-bit",
-          "Little-endian"
-        ],
-        "estimatedMinutes": 15
-      }
-    },
-    {
-      "id": 23,
-      "title": "Boucle via Pointeur",
-      "description": "## Balayer 256 octets avec un pointeur\n\nAvec `($F0),Y` et une boucle sur Y (0→255), on balaie une page entière.\nEn changeant `$F1`, on change de page.\n\n```asm\n  LDA #$02 : STA $F1\n  LDA #$07\n  LDY #$00\nB: STA ($F0),Y\n   INY\n   BNE B   ; 256 fois\n```\n\n## Mission\nPeins les 4 pages d'écran avec 4 couleurs via ce mécanisme.",
-      "template": "; Défi 23 — 4 pages, 1 pointeur\n\n  LDA #$00 : STA $F0   ; octet bas toujours $00\n\n  ; Page 1 ($0200) : rouge\n  LDA #$02 : STA $F1\n  LDA #$02\n  LDY #$00\nP1: STA ($F0),Y : INY : BNE P1\n\n  ; Page 2 ($0300) : vert\n  LDA #$03 : STA $F1\n  LDA #$05\n  LDY #$00\nP2: STA ($F0),Y : INY : BNE P2\n\n  ; Page 3 ($0400) : bleu\n  ; ...\n\n  ; Page 4 ($0500) : jaune\n  ; ...\n\n\n  BRK\n",
+      "arena": 4,
+      "arena_name": "L'Architecte",
+      "title": "Les Escaliers",
+      "description": "## 📡 Théorie — ASL pour les adresses de lignes\n\nPour aller à la ligne N : `N × 32` = 5 fois ASL :\n\n```asm\n  LDA #$06   ; ligne 6\n  ASL:ASL:ASL:ASL:ASL   ; × 32 = $C0\n  ; Adresse = $0200 + $C0 = $02C0\n```\n\n---\n\n## 🎯 Mission — LSR au lieu de ASL + soustraction\n\nL'escalier dessine un pixel décalé sur chaque ligne. Le calcul d'adresse utilise **LSR** (divise) au lieu d'**ASL** (multiplie), et le décalage de colonne est **soustrait** au lieu d'être ajouté.\n\n```asm\n;  DONJON 2D — Module 4/6 — ESCALIER INVERSÉ\n\n  LDX #$00\nMARCHE:\n  TXA\n  LSR:LSR:LSR:LSR:LSR  ; BUG 1 — devrait être ASL\n  STA $F0 : LDA #$02 : STA $F1\n\n  LDA $F0 : SEC\n  SBC $F0  ; BUG 2 — annule le calcul ! devrait additionner X\n  STA $F0\n\n  LDA #$0A : LDY #$00 : STA ($F0),Y\n  INX : CPX #$08 : BNE MARCHE\n  BRK\n```",
+      "template": ";  DONJON 2D — Module 4/6\n;  8 marches diagonales\n\n  LDX #$00\nMARCHE:\n  TXA\n  LSR:LSR:LSR:LSR:LSR  ; BUG 1 — remplace par ASL\n  STA $F0 : LDA #$02 : STA $F1\n\n  LDA $F0 : SEC\n  SBC $F0  ; BUG 2 — ajoute X au lieu de soustraire\n  STA $F0  ; remplace SEC/SBC par : STX $E0 : CLC : ADC $E0\n\n  LDA #$0A : LDY #$00 : STA ($F0),Y\n  INX : CPX #$08 : BNE MARCHE\n  BRK\n",
       "assertions": [
         {
           "type": "memory",
           "address": 512,
-          "value": 2,
-          "failMsg": "Page 1 ($0200) devrait être rouge ($02)"
+          "value": 10,
+          "failMsg": "Marche 0 : ligne 0, col 0 → $0200 = brun clair."
         },
         {
           "type": "memory",
-          "address": 767,
-          "value": 2,
-          "failMsg": "Page 1 ($02FF) devrait être rouge ($02)"
+          "address": 545,
+          "value": 10,
+          "failMsg": "Marche 1 : ligne 1, col 1 → $0221 = brun clair."
         },
         {
           "type": "memory",
-          "address": 768,
-          "value": 5,
-          "failMsg": "Page 2 ($0300) devrait être vert ($05)"
-        },
-        {
-          "type": "memory",
-          "address": 1023,
-          "value": 5,
-          "failMsg": "Page 2 ($03FF) devrait être vert ($05)"
-        },
-        {
-          "type": "memory",
-          "address": 1024,
-          "value": 6,
-          "failMsg": "Page 3 ($0400) devrait être bleu ($06)"
-        },
-        {
-          "type": "memory",
-          "address": 1280,
-          "value": 7,
-          "failMsg": "Page 4 ($0500) devrait être jaune ($07)"
-        }
-      ],
-      "maxCycles": 10000,
-      "hints": [
-        {
-          "text": "Page 3 : LDA #$04 : STA $F1, couleur #$06. Page 4 : LDA #$05 : STA $F1, couleur #$07."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 4",
-          "page": 79,
-          "topic": "Boucle avec pointeur indirect"
-        },
-        "concepts": [
-          "Adressage indirect",
-          "INY",
-          "BNE",
-          "Pages mémoire"
-        ],
-        "estimatedMinutes": 15
-      }
-    },
-    {
-      "id": 24,
-      "title": "⚔️ Boss — La Croix",
-      "description": "## Boss de l'Arène 4\n\nDessine une croix blanche (`$01`) au centre de l'écran (ligne 16, colonne 16).\n\nLa croix = :\n- **Barre horizontale** : ligne 16, colonnes 8 à 23 (16 pixels)\n- **Barre verticale** : colonne 16, lignes 8 à 23 (16 lignes)\n\nAdresses :\n- Ligne N, colonne C = `$0200 + N × $20 + C`\n- Ligne 16, col 8 = `$0200 + $200 + $08 = $0408`\n- Ligne 8, col 16 = `$0200 + $100 + $10 = $0310`\n\nUtilise des fonctions JSR/RTS pour structurer ton code !",
-      "template": "; Défi 24 — Boss : La Croix\n; Centre = (16, 16). Croix de 16 pixels de large.\n\nMAIN:\n  ; Barre horizontale : ligne 16, cols 8 à 23\n  ; Adresse de base : $0200 + 16×$20 + 8 = $0408\n  LDA #$01\n  LDX #$00\nHORIZ:\n  STA $0408,X\n  INX\n  CPX #$10    ; 16 pixels\n  BNE HORIZ\n\n  ; Barre verticale : col 16, lignes 8 à 23\n  ; Ligne 8, col 16 = $0310\n  ; Chaque ligne suivante = +$20\n  LDA #$01\n  LDY #$00\nVERT:\n  ; écrire à $0310 + Y×$20\n  ; Astuce : utilise une adresse fixe et compte manuellement\n  ; OU utilise une variable qui s'incrémente de $20 à chaque tour\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 1032,
-          "value": 1,
-          "failMsg": "$0408 (ligne 16, col 8) devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 1039,
-          "value": 1,
-          "failMsg": "$040F (ligne 16, col 15) devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 1040,
-          "value": 1,
-          "failMsg": "$0410 (ligne 16, col 16) devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 784,
-          "value": 1,
-          "failMsg": "$0310 (ligne 8, col 16) devrait être blanc"
-        },
-        {
-          "type": "memory",
-          "address": 1040,
-          "value": 1,
-          "failMsg": "$0410 (ligne 16, col 16) — intersection — devrait être blanc"
-        }
-      ],
-      "maxCycles": 5000,
-      "hints": [
-        {
-          "text": "Barre horizontale : STA $0408,X de X=0 à X=15 — facile !"
-        },
-        {
-          "text": "Barre verticale : une variable en $F0/$F1 qui commence à $0310 et s'incrémente de $20 à chaque tour. Ou 16 STA manuels : $0310, $0330, $0350..."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 7",
-          "page": 122,
-          "topic": "Sous-routines et calcul d'adresses"
-        },
-        "concepts": [
-          "JSR",
-          "RTS",
-          "ASL",
-          "ADC",
-          "Formes géométriques"
-        ],
-        "estimatedMinutes": 25
-      }
-    },
-    {
-      "id": 25,
-      "title": "L'Aléatoire — $FE",
-      "description": "## 🔴 Arène 5 — L'Animateur\n\nL'adresse `$FE` retourne un **octet pseudo-aléatoire** différent à chaque lecture.\n\n```asm\n  LDA $FE     ; valeur 0-255\n  AND #$0F    ; réduit à 0-15 pour la palette\n  STA $0200   ; pixel aléatoire\n```\n\n## Mission\nRemplis la première ligne (32 pixels) avec des couleurs aléatoires.\n`AND #$0F` garantit des valeurs dans la palette (0-15).",
-      "template": "; Défi 25 — Couleurs aléatoires\n\n  LDX #$00\nBOUCLE:\n  LDA $FE\n  AND #$0F\n  STA $0200,X\n  INX\n  CPX #$20\n  BNE BOUCLE\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "X",
-          "value": 32,
-          "failMsg": "X devrait valoir $20 (32) — la boucle doit avoir fait 32 tours"
-        }
-      ],
-      "maxCycles": 2000,
-      "hints": [
-        {
-          "text": "Le code est complet ! Lance-le plusieurs fois et observe les couleurs changer aléatoirement."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 8",
-          "page": 130,
-          "topic": "Générateur aléatoire $FE"
-        },
-        "concepts": [
-          "LDA $FE",
-          "AND",
-          "Aléatoire",
-          "Masquage"
-        ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 26,
-      "title": "La Boucle Infinie — JMP",
-      "description": "## Animer en continu\n\n`JMP label` force un saut inconditionnel — le programme ne s'arrête jamais.\n\nPour animer : remplis l'écran en boucle infinie avec des couleurs aléatoires (neige TV).\n\nUtilise le bouton **Stop** pour arrêter.\n\n## Mission\nNeige TV : remplis tout l'écran (`$0200`-`$05FF`) en boucle infinie avec `$FE AND #$0F`.",
-      "template": "; Défi 26 — Neige TV (boucle infinie)\n; Utilise STOP pour arrêter !\n\n  LDA #$00 : STA $F0\n  LDA #$02 : STA $F1\n\nFRAME:\n  LDY #$00\nPIXEL:\n  LDA $FE\n  AND #$0F\n  STA ($F0),Y\n  INY\n  BNE PIXEL\n\n  INC $F1\n  LDA $F1\n  CMP #$06\n  BNE FRAME\n\n  LDA #$02 : STA $F1\n  JMP FRAME\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "A",
-          "value": 2,
-          "failMsg": "Programme boucle infinie — clique Stop puis Valider."
-        }
-      ],
-      "maxCycles": 100000,
-      "hints": [
-        {
-          "text": "Le code est complet ! Lance, observe la neige, Stop, puis Valider."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 8",
-          "page": 135,
-          "topic": "JMP — boucle infinie"
-        },
-        "concepts": [
-          "JMP",
-          "INC",
-          "CMP",
-          "Boucle infinie",
-          "Animation"
-        ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 27,
-      "title": "La Temporisation — Delay Loop",
-      "description": "## Ralentir pour les yeux\n\nUne boucle vide gaspille des cycles — c'est une **delay loop** :\n\n```asm\nDELAY:\n  LDX #$20\nD2: LDY #$FF\nD1: DEY : BNE D1\n    DEX : BNE D2\n  RTS\n```\n\nPlus X est grand, plus le délai est long.\n\n## Mission\nUn pixel blanc qui **clignote** : allume `$0210`, délai, éteins, délai, reboucle.",
-      "template": "; Défi 27 — Clignotement\n; Un pixel qui clignote grâce à une delay loop\n\nMAIN:\n  LDA #$01 : STA $0210   ; allume\n  JSR DELAY\n  LDA #$00 : STA $0210   ; éteint\n  JSR DELAY\n  JMP MAIN\n\nDELAY:\n  LDX #$20\nD2: LDY #$FF\nD1: DEY : BNE D1\n    DEX : BNE D2\n  RTS\n",
-      "assertions": [
-        {
-          "type": "register",
-          "register": "A",
-          "value": 0,
-          "failMsg": "Programme boucle infinie — Stop puis Valider."
-        }
-      ],
-      "maxCycles": 100000,
-      "hints": [
-        {
-          "text": "Le code est complet ! Observe le pixel clignoter. Essaie de modifier $0210 pour déplacer le pixel."
-        }
-      ],
-      "meta": {
-        "zaks": {
-          "chapter": "Chapitre 6",
-          "page": 108,
-          "topic": "Delay loop — timing logiciel"
-        },
-        "concepts": [
-          "JSR",
-          "RTS",
-          "DEY",
-          "BNE",
-          "Délai",
-          "Clignotement"
-        ],
-        "estimatedMinutes": 10
-      }
-    },
-    {
-      "id": 28,
-      "title": "Le Sprite — Un Smiley",
-      "description": "## Dessiner une forme\n\nUn **sprite** = des données + une position.\n\nSmiley 4×4 (0=noir, 7=jaune) :\n```\n. * * .     ligne 4 : $0284, $0285, $0286, $0287\n* . . *     ligne 5 : $02A4, $02A5, $02A6, $02A7\n* . . *     ligne 6 : $02C4, $02C5, $02C6, $02C7\n. * * .     ligne 7 : $02E4, $02E5, $02E6, $02E7\n```\n\nLigne N, col C = `$0200 + N×$20 + C`.\nLigne 4, col 4 = `$0200 + $80 + $04 = $0284`.\n\n## Mission\nDessine le smiley. Complète les 2 dernières rangées.",
-      "template": "; Défi 28 — Smiley 4x4\n; Ligne 4, col 4 = $0284\n\n  ; Rangée 0 ($0284)\n  LDA #$00 : STA $0284\n  LDA #$07 : STA $0285\n  LDA #$07 : STA $0286\n  LDA #$00 : STA $0287\n\n  ; Rangée 1 ($02A4)\n  LDA #$07 : STA $02A4\n  LDA #$00 : STA $02A5\n  LDA #$00 : STA $02A6\n  LDA #$07 : STA $02A7\n\n  ; Rangée 2 ($02C4) — même pattern que rangée 1\n  ; ...\n\n  ; Rangée 3 ($02E4) — même pattern que rangée 0\n  ; ...\n\n\n  BRK\n",
-      "assertions": [
-        {
-          "type": "memory",
-          "address": 644,
-          "value": 0,
-          "failMsg": "(4,4)=$0284 devrait être noir"
-        },
-        {
-          "type": "memory",
-          "address": 645,
-          "value": 7,
-          "failMsg": "(4,5)=$0285 devrait être jaune"
-        },
-        {
-          "type": "memory",
-          "address": 676,
-          "value": 7,
-          "failMsg": "(5,4)=$02A4 devrait être jaune"
-        },
-        {
-          "type": "memory",
-          "address": 677,
-          "value": 0,
-          "failMsg": "(5,5)=$02A5 devrait être noir"
-        },
-        {
-          "type": "memory",
-          "address": 708,
-          "value": 7,
-          "failMsg": "(6,4)=$02C4 devrait être jaune"
-        },
-        {
-          "type": "memory",
-          "address": 740,
-          "value": 0,
-          "failMsg": "(7,4)=$02E4 devrait être noir"
-        },
-        {
-          "type": "memory",
-          "address": 741,
-          "value": 7,
-          "failMsg": "(7,5)=$02E5 devrait être jaune"
+          "address": 743,
+          "value": 10,
+          "failMsg": "Marche 7 : ligne 7, col 7 = brun clair."
         }
       ],
       "maxCycles": 1000,
       "hints": [
         {
-          "text": "Rangée 2 = même que rangée 1 : $02C4=$07, $02C5=$00, $02C6=$00, $02C7=$07"
+          "text": "BUG 1 : ASL au lieu de LSR. 5×ASL sur X donne l'offset de ligne (X×32)."
         },
         {
-          "text": "Rangée 3 = même que rangée 0 : $02E4=$00, $02E5=$07, $02E6=$07, $02E7=$00"
+          "text": "BUG 2 : STX $E0 : LDA $F0 : CLC : ADC $E0 : STA $F0 pour ajouter la colonne X à l'offset de ligne."
         }
       ],
       "meta": {
+        "concepts": [
+          "ASL",
+          "Calcul adresse 2D",
+          "ADC"
+        ],
+        "estimatedMinutes": 15,
+        "zaks": {
+          "chapter": "Chapitre 5",
+          "page": 88,
+          "topic": "ASL pour calcul"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "arena": 4,
+      "arena_name": "L'Architecte",
+      "title": "La Salle des Miroirs",
+      "description": "## 📡 Théorie — Sous-routines paramétrées\n\nEn 6502, les paramètres passent via les registres :\n\n```asm\n; Convention : A=couleur, X=colonne, Y=ligne\n  LDA #$02 : LDX #$04 : LDY #$02\n  JSR DRAW_PIXEL\n```\n\n---\n\n## 🎯 Mission — Paramètres échangés\n\nLa salle symétrique doit avoir un pixel rouge à gauche et vert à droite. Mais les **couleurs et colonnes sont échangées** entre les deux appels.\n\n```asm\n;  DONJON 2D — Module 5/6 — PARAMÈTRES ÉCHANGÉS\n; Convention : A=couleur, X=colonne, Y=ligne\n\n; Pixel rouge($02) col=4 ligne=2\n  LDA #$05   ; BUG — devrait être $02\n  LDX #$18   ; BUG — devrait être $04\n  LDY #$02 : JSR DRAW_PIXEL\n\n; Pixel vert($05) col=24 ligne=2\n  LDA #$02   ; BUG — devrait être $05\n  LDX #$04   ; BUG — devrait être $18\n  LDY #$02 : JSR DRAW_PIXEL\n\n  BRK\n\nDRAW_PIXEL:\n  PHA : TYA : ASL:ASL:ASL:ASL:ASL : STA $F0\n  LDA #$02 : STA $F1\n  LDA $F0 : CLC : STX $E0 : ADC $E0 : STA $F0\n  PLA : LDY #$00 : STA ($F0),Y : RTS\n```",
+      "template": ";  DONJON 2D — Module 5/6\n; Convention : A=couleur, X=colonne, Y=ligne\n\n; Rouge($02) col=4 ligne=2\n  LDA #$05   ; BUG\n  LDX #$18   ; BUG\n  LDY #$02 : JSR DRAW_PIXEL\n\n; Vert($05) col=24 ligne=2\n  LDA #$02   ; BUG\n  LDX #$04   ; BUG\n  LDY #$02 : JSR DRAW_PIXEL\n\n  BRK\n\nDRAW_PIXEL:\n  PHA : TYA : ASL:ASL:ASL:ASL:ASL : STA $F0\n  LDA #$02 : STA $F1\n  LDA $F0 : CLC : STX $E0 : ADC $E0 : STA $F0\n  PLA : LDY #$00 : STA ($F0),Y : RTS\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 580,
+          "value": 2,
+          "failMsg": "Pixel gauche : ligne 2 col 4 = $0244 → rouge ($02)."
+        },
+        {
+          "type": "memory",
+          "address": 600,
+          "value": 5,
+          "failMsg": "Pixel droit : ligne 2 col 24 = $0258 → vert ($05)."
+        }
+      ],
+      "maxCycles": 500,
+      "hints": [
+        {
+          "text": "Premier appel : LDA #$02 (rouge), LDX #$04 (col 4). Deuxième : LDA #$05 (vert), LDX #$18 (col 24)."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "JSR",
+          "PHA",
+          "PLA",
+          "Paramètres"
+        ],
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 7",
+          "page": 122,
+          "topic": "Paramètres de sous-routine"
+        }
+      }
+    },
+    {
+      "id": 24,
+      "arena": 4,
+      "arena_name": "L'Architecte",
+      "title": "⚔️ BOSS — Le Labyrinthe Complet",
+      "description": "## 📡 Récapitulatif Arène 4\n\nTu maîtrises : JSR/RTS, PHA/PLA, adressage indirect, ASL pour les adresses, sous-routines paramétrées.\n\n---\n\n## 🎯 Mission BOSS — Paramètres mélangés\n\nLe donjon complet nécessite 4 appels avec les bons paramètres. Tous les **paramètres sont mélangés** entre les 4 appels.\n\n```asm\n;  DONJON 2D — BOSS\n; Convention : A=couleur, X=colonne, Y=ligne\n\n; SOL : violet($04) col=0 ligne=8\n  LDA #$09 : LDX #$00 : LDY #$04  ; BUG — A et Y inversés\n  JSR DRAW_PIXEL\n\n; MUR NORD : brun($09) col=0 ligne=4\n  LDA #$04 : LDX #$00 : LDY #$08  ; BUG — A et Y inversés\n  JSR DRAW_PIXEL\n\n; PORTE : jaune($07) col=15 ligne=8\n  LDA #$05 : LDX #$0F : LDY #$08  ; BUG — A incorrect\n  JSR DRAW_PIXEL\n\n; TRÉSOR : vert($05) col=28 ligne=12\n  LDA #$07 : LDX #$1C : LDY #$0C  ; BUG — A incorrect\n  JSR DRAW_PIXEL\n\n  BRK\n```\n\n_🏰 L'Arène 4 est complète. Le donjon est construit !_",
+      "template": ";  DONJON 2D — BOSS\n; Convention : A=couleur, X=colonne, Y=ligne\n\n; SOL : violet($04) col=0 ligne=8\n  LDA #$09 : LDX #$00 : LDY #$04  ; BUG 1\n  JSR DRAW_PIXEL\n\n; MUR NORD : brun($09) col=0 ligne=4\n  LDA #$04 : LDX #$00 : LDY #$08  ; BUG 2\n  JSR DRAW_PIXEL\n\n; PORTE : jaune($07) col=15 ligne=8\n  LDA #$05 : LDX #$0F : LDY #$08  ; BUG 3\n  JSR DRAW_PIXEL\n\n; TRÉSOR : vert($05) col=28 ligne=12\n  LDA #$07 : LDX #$1C : LDY #$0C  ; BUG 4\n  JSR DRAW_PIXEL\n\n  BRK\n\nDRAW_PIXEL:\n  PHA : TYA : ASL:ASL:ASL:ASL:ASL : STA $F0\n  LDA #$02 : STA $F1\n  LDA $F0 : CLC : STX $E0 : ADC $E0 : STA $F0\n  PLA : LDY #$00 : STA ($F0),Y : RTS\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 768,
+          "value": 4,
+          "failMsg": "SOL ligne 8 col 0 ($0300) = violet ($04). LDA #$04, LDY #$08."
+        },
+        {
+          "type": "memory",
+          "address": 640,
+          "value": 9,
+          "failMsg": "MUR ligne 4 col 0 ($0280) = brun ($09). LDA #$09, LDY #$04."
+        },
+        {
+          "type": "memory",
+          "address": 783,
+          "value": 7,
+          "failMsg": "PORTE col 15 ligne 8 = jaune ($07). LDA #$07."
+        },
+        {
+          "type": "memory",
+          "address": 924,
+          "value": 5,
+          "failMsg": "TRÉSOR col 28 ligne 12 = vert ($05). LDA #$05."
+        }
+      ],
+      "maxCycles": 2000,
+      "hints": [
+        {
+          "text": "SOL : A=$04 (violet), Y=$08 (ligne 8). MUR : A=$09 (brun), Y=$04 (ligne 4)."
+        },
+        {
+          "text": "PORTE : A=$07 (jaune). TRÉSOR : A=$05 (vert). Les X et Y de ces deux appels sont corrects."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "JSR",
+          "RTS",
+          "Paramètres",
+          "Synthèse Arène 4"
+        ],
+        "estimatedMinutes": 20,
+        "zaks": {
+          "chapter": "Chapitre 7",
+          "page": 122,
+          "topic": "Architecture sous-routines"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "arena": 5,
+      "arena_name": "L'Animateur",
+      "title": "Le Sprite Immobile",
+      "description": "## 📡 Théorie — Sprites et données\n\nUn sprite est défini ligne par ligne avec `.byte`. Pour dessiner à la position (ligne L, col C) :\n\n```\nAdresse = $0200 + L × 32 + C\n```\n\n---\n\n## 🎯 Mission — Sprite transposé\n\nLe sprite du héros a les **boucles imbriquées inversées** : les lignes en interne, les colonnes en externe. Le personnage apparaît transposé.\n\n```asm\n;  LE HÉROS — Module 1/6 — SPRITE TRANSPOSÉ\n\n  LDX #$00  ; index sprite global\n  LDY #$00  ; Y = ligne (0..7)\n\nOUTER:\n  ; manque la boucle interne sur les colonnes\n  LDA HERO_DATA,X\n  STA $0280,X   ; BUG — doit utiliser une adresse calculée\n  INX\n  INY           ; BUG — INY et INX inversés\n  CPY #$08\n  BNE OUTER\n\n  BRK\n\nHERO_DATA:\n  .byte $00,$07,$07,$07,$07,$07,$07,$00\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $07,$01,$09,$01,$01,$09,$01,$07\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $07,$01,$01,$07,$07,$01,$01,$07\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $00,$07,$07,$07,$07,$07,$07,$00\n```\n\nStructure correcte : `Y=ligne(0..7)`, pour chaque ligne `X=col(0..7)`. Adresse = `$0280 + Y×$20 + X + 12` (col de départ = 12).",
+      "template": ";  LE HÉROS — Module 1/6\n;  Sprite 8×8 à (col=12, ligne=4)\n\n  LDY #$00  ; Y = ligne du sprite (0..7)\n  LDX #$00  ; index dans HERO_DATA\n\nOUTER:\n  ; Calcule adresse base ligne : $0280 + Y×$20\n  ; Pour simplifier : $0280=ligne4, $02A0=ligne5...\n  ; Utilise un pointeur $F0/$F1 que tu incrémentes de $20\n\n  ; Boucle interne : X = colonne (0..7)\n  ; Écrit HERO_DATA[index] à adresse_base + 12 + col_interne\n\n  ; TA MISSION : restructure les deux boucles\n  ; Indice : commence par initialiser $F0=$8C,$F1=$02\n  ; (= $0280 + 12 = $028C = col 12 ligne 4)\n  ; puis INX pour les colonnes, INC $F0 pour avancer de $20\n\n  LDA HERO_DATA,X\n  STA $028C,X  ; simplifié — ligne 4 seulement\n  INX\n  CPX #$08\n  BNE OUTER\n\n  BRK\n\nHERO_DATA:\n  .byte $00,$07,$07,$07,$07,$07,$07,$00\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $07,$01,$09,$01,$01,$09,$01,$07\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $07,$01,$01,$07,$07,$01,$01,$07\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $07,$01,$01,$01,$01,$01,$01,$07\n  .byte $00,$07,$07,$07,$07,$07,$07,$00\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 652,
+          "value": 0,
+          "failMsg": "Col 12 ligne 4 ($028C) = $00 (bord haut du sprite)."
+        },
+        {
+          "type": "memory",
+          "address": 653,
+          "value": 7,
+          "failMsg": "Col 13 ligne 4 ($028D) = $07 (jaune)."
+        },
+        {
+          "type": "memory",
+          "address": 686,
+          "value": 9,
+          "failMsg": "Yeux : col 14 ligne 5 = $09 (brun)."
+        }
+      ],
+      "maxCycles": 2000,
+      "hints": [
+        {
+          "text": "Version simplifiée : 8 blocs de 8 STA consécutifs, un par ligne. $028C, $02AC, $02CC, $02EC, $030C, $032C, $034C, $036C."
+        },
+        {
+          "text": "Ou boucle imbriquée : Y de 0 à 7 (ligne), X de 0 à 7 (col), index global Z++. Adresse = $028C + Y×$20 + X."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "Sprite",
+          ".byte",
+          "Boucles imbriquées",
+          "Adresse 2D"
+        ],
+        "estimatedMinutes": 20,
         "zaks": {
           "chapter": "Chapitre 8",
           "page": 138,
-          "topic": "Sprite — données statiques"
+          "topic": "Rendu de sprite"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "arena": 5,
+      "arena_name": "L'Animateur",
+      "title": "Le Fantôme",
+      "description": "## 📡 Théorie — Effacer un sprite\n\nPour déplacer, d'abord **effacer** (écrire $00 à l'ancienne position) puis **dessiner** à la nouvelle :\n\n```\n1. Effacer ancienne position\n2. Mettre à jour position\n3. Dessiner nouvelle position\n4. Délai\n5. Recommencer\n```\n\n---\n\n## 🎯 Mission — Effacement cassé\n\nL'effacement écrit **la couleur du sprite** au lieu de `$00`, et ne couvre **qu'une seule ligne** au lieu des 8.\n\n```asm\n;  LE HÉROS — Module 2/6 — EFFACEMENT CASSÉ\n\nCLEAR_SPRITE:\n  LDA #$07   ; BUG 1 — devrait être #$00\n  LDX #$00\nCLR:\n  STA $028C,X   ; efface seulement ligne 4\n  INX : CPX #$08 : BNE CLR\n  ; BUG 2 — manque les 7 autres lignes\n  ; ($02AC, $02CC, $02EC, $030C, $032C, $034C, $036C)\n  RTS\n```",
+      "template": ";  LE HÉROS — Module 2/6\n;  Effacer les 8 lignes du sprite\n\nCLEAR_SPRITE:\n  LDA #$07   ; BUG 1 — mauvaise couleur\n  LDX #$00\nCLR:\n  STA $028C,X\n  INX : CPX #$08 : BNE CLR\n\n  ; BUG 2 — ajoute l'effacement des 7 autres lignes ici\n  ; Lignes à effacer : $02AC, $02CC, $02EC, $030C, $032C, $034C, $036C\n\n  RTS\n",
+      "assertions": [
+        {
+          "type": "sequence",
+          "address": 652,
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failMsg": "Ligne 0 sprite ($028C-$0293) = effacé ($00)."
         },
+        {
+          "type": "sequence",
+          "address": 684,
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failMsg": "Ligne 1 sprite ($02AC-$02B3) = effacé."
+        },
+        {
+          "type": "sequence",
+          "address": 876,
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "failMsg": "Ligne 7 sprite ($036C-$0373) = effacé."
+        }
+      ],
+      "maxCycles": 1000,
+      "hints": [
+        {
+          "text": "BUG 1 : LDA #$00 pour effacer. BUG 2 : répète une boucle similaire pour chaque ligne."
+        },
+        {
+          "text": "Les 8 bases de lignes : $028C, $02AC, $02CC, $02EC, $030C, $032C, $034C, $036C. Chaque boucle fait 8 pixels avec X de 0 à 7."
+        }
+      ],
+      "meta": {
         "concepts": [
-          "Sprite",
-          "STA",
-          "Coordonnées écran"
+          "Effacement sprite",
+          "LDA #$00",
+          "Boucles"
         ],
-        "estimatedMinutes": 15
+        "estimatedMinutes": 10,
+        "zaks": {
+          "chapter": "Chapitre 8",
+          "page": 142,
+          "topic": "Animation effacement"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "arena": 5,
+      "arena_name": "L'Animateur",
+      "title": "Le Pas de Course",
+      "description": "## 📡 Théorie — Délai logiciel\n\n```asm\nDELAY:\n  LDY #$20\nOUTER:\n  LDX #$FF\nINNER:\n  DEX : BNE INNER\n  DEY : BNE OUTER\n  RTS\n```\n\nPlus les compteurs sont grands, plus le délai est long.\n\n---\n\n## 🎯 Mission — Le héros court à gauche\n\nLe héros doit aller de gauche à droite. Mais le mouvement **soustrait au lieu d'additionner** et le **test de bord droit compare avec la mauvaise valeur**.\n\n```asm\n;  LE HÉROS — Module 3/6 — COURSE INVERSÉE\n\n  LDA #$00 : STA $10  ; pos_x = 0\n\nGAME_LOOP:\n  JSR CLEAR_POS\n  LDA $10 : SEC : SBC #$01 : STA $10  ; BUG 1 — va à gauche\n  CMP #$00 : BNE GAME_LOOP            ; BUG 2 — arrêt à 0 au lieu de $18\n  JSR DRAW_POS\n  BRK\n\nCLEAR_POS: LDA #$00 : LDX $10 : STA $028C,X : RTS\nDRAW_POS:  LDA #$07 : LDX $10 : STA $028C,X : RTS\n```",
+      "template": ";  LE HÉROS — Module 3/6\n;  Course vers la droite\n\n  LDA #$00 : STA $10  ; pos_x\n\nGAME_LOOP:\n  JSR CLEAR_POS\n  JSR DELAY\n  LDA $10 : SEC : SBC #$01 : STA $10  ; BUG 1 — vers la gauche\n  CMP #$00 : BNE GAME_LOOP            ; BUG 2 — mauvais seuil\n  JSR DRAW_POS\n  BRK\n\nCLEAR_POS:\n  LDA #$00 : LDX $10 : STA $028C,X : RTS\n\nDRAW_POS:\n  LDA #$07 : LDX $10 : STA $028C,X : RTS\n\nDELAY:\n  LDY #$08\nD2: LDX #$FF\nD1: DEX : BNE D1 : DEY : BNE D2\n  RTS\n",
+      "assertions": [
+        {
+          "type": "memory",
+          "address": 676,
+          "value": 7,
+          "failMsg": "Héros à col 24 ($028C + $18) = jaune ($07). BUG 1 : CLC/ADC. BUG 2 : CMP #$18."
+        },
+        {
+          "type": "memory",
+          "address": 652,
+          "value": 0,
+          "failMsg": "$028C doit être effacé — le héros est parti vers la droite."
+        }
+      ],
+      "maxCycles": 100000,
+      "hints": [
+        {
+          "text": "BUG 1 : SEC/SBC va vers la gauche. Remplace par CLC/ADC #$01."
+        },
+        {
+          "text": "BUG 2 : le héros s'arrête à col 24 = $18. Remplace CMP #$00 par CMP #$18."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "CLC",
+          "ADC",
+          "CMP",
+          "Animation",
+          "Déplacement"
+        ],
+        "estimatedMinutes": 15,
+        "zaks": {
+          "chapter": "Chapitre 8",
+          "page": 142,
+          "topic": "Déplacement sprite"
+        }
+      }
+    },
+    {
+      "id": 28,
+      "arena": 5,
+      "arena_name": "L'Animateur",
+      "title": "Le Rebond",
+      "description": "## 📡 Théorie — Direction et rebond\n\nPour inverser la direction : `$00 - direction` :\n\n```asm\n; $01 (droite) ↔ $FF (gauche)\n  LDA #$00 : SEC : SBC $DIR : STA $DIR\n```\n\n---\n\n## 🎯 Mission — Rebonds au mauvais endroit\n\nLe rebond fonctionne mais **les seuils sont incorrects** : rebond à col 12 au lieu de 24, et à col 16 au lieu de 0. De plus la **direction initiale est vers la gauche**.\n\n```asm\n;  LE HÉROS — Module 4/6 — REBONDS INCORRECTS\n\n  LDA #$FF : STA $10  ; BUG 1 — direction gauche (devrait être $01)\n  LDA #$00 : STA $11  ; pos_x\n\nBOUNCE:\n  LDA $11 : CLC : ADC $10 : STA $11\n  CMP #$0C : BCC NO_R   ; BUG 2 — rebond à 12 (devrait être $18)\n  LDA #$00 : SEC : SBC $10 : STA $10\nNO_R:\n  LDA $11 : CMP #$10 : BNE NO_L  ; BUG 3 — rebond à 16 (devrait être $00)\n  LDA #$00 : SEC : SBC $10 : STA $10\nNO_L:\n  JSR DRAW_POS : JSR DELAY : JMP BOUNCE\n\nDRAW_POS: LDA #$07 : LDX $11 : STA $028C,X : RTS\nDELAY: LDY #$06 : D2: LDX #$FF : D1: DEX:BNE D1 : DEY:BNE D2 : RTS\n```",
+      "template": ";  LE HÉROS — Module 4/6\n;  Rebond sur les bords\n\n  LDA #$FF : STA $10  ; BUG 1 — direction\n  LDA #$00 : STA $11  ; pos_x\n\nBOUNCE:\n  LDA $11 : CLC : ADC $10 : STA $11\n  CMP #$0C : BCC NO_R   ; BUG 2 — seuil droit\n  LDA #$00 : SEC : SBC $10 : STA $10\nNO_R:\n  LDA $11 : CMP #$10 : BNE NO_L  ; BUG 3 — seuil gauche\n  LDA #$00 : SEC : SBC $10 : STA $10\nNO_L:\n  JSR DRAW_POS : JSR DELAY : JMP BOUNCE\n\nDRAW_POS:\n  LDA #$07 : LDX $11 : STA $028C,X : RTS\n\nDELAY:\n  LDY #$06\nD2: LDX #$FF\nD1: DEX : BNE D1 : DEY : BNE D2 : RTS\n",
+      "assertions": [
+        {
+          "type": "register",
+          "register": "A",
+          "value": 7,
+          "failMsg": "Boucle infinie — Stop puis Valider. Observe le rebond entre col 0 et col 24 !"
+        }
+      ],
+      "maxCycles": 100000,
+      "hints": [
+        {
+          "text": "BUG 1 : LDA #$01 pour partir à droite. BUG 2 : CMP #$18 pour rebond à col 24."
+        },
+        {
+          "text": "BUG 3 : CMP #$00 pour rebond sur le bord gauche."
+        }
+      ],
+      "meta": {
+        "concepts": [
+          "CLC",
+          "ADC",
+          "SBC",
+          "Direction",
+          "Rebond"
+        ],
+        "estimatedMinutes": 15,
+        "zaks": {
+          "chapter": "Chapitre 8",
+          "page": 145,
+          "topic": "Rebond"
+        }
       }
     },
     {
       "id": 29,
-      "title": "Le Mouvement — Effacer et Redessiner",
-      "description": "## La recette de l'animation\n\n1. **Effacer** (écrire `$00` à l'ancienne position)\n2. **Mettre à jour** la position (INX, ADC...)\n3. **Dessiner** à la nouvelle position\n4. **Attendre** (JSR DELAY)\n5. `JMP` au début\n\n## Mission\nUn pixel blanc qui rebondit horizontalement sur la ligne 1.\n- `$10` = position X (0-31)\n- `$11` = direction (`$01`=droite, `$FF`=-1=gauche)\n\nLe code est complet — observe, comprends, puis modifie la couleur ou la vitesse.",
-      "template": "; Défi 29 — Rebond horizontal\n\n  LDA #$00 : STA $10   ; X = 0\n  LDA #$01 : STA $11   ; direction = +1\n\nLOOP:\n  LDA #$00 : LDX $10 : STA $0200,X   ; efface\n\n  LDA $10 : CLC : ADC $11 : STA $10   ; bouge\n\n  CMP #$1F : BEQ DROITE\n  CMP #$00 : BEQ GAUCHE\n  JMP DESSINE\n\nDROITE: LDA #$FF : STA $11 : JMP DESSINE\nGAUCHE: LDA #$01 : STA $11\n\nDESSINE:\n  LDA #$01 : LDX $10 : STA $0200,X   ; dessine\n  JSR DELAY\n  JMP LOOP\n\nDELAY:\n  LDY #$50\nD1: DEY : BNE D1\n  RTS\n",
+      "arena": 5,
+      "arena_name": "L'Animateur",
+      "title": "La Gravité",
+      "description": "## 📡 Théorie — Physique avec vélocité\n\n```asm\n; Chaque frame :\n  LDA $VEL : CLC : ADC #$01 : STA $VEL  ; gravité\n  LDA $POS : CLC : ADC $VEL  : STA $POS  ; position\n```\n\nVélocité négative = monte (`$FD` = -3 en complément à 2).\n\n---\n\n## 🎯 Mission — Gravité inversée\n\nLe héros saute mais **la vélocité initiale est positive** (tombe immédiatement) et **le seuil du sol est incorrect**.\n\n```asm\n;  LE HÉROS — Module 5/6 — GRAVITÉ INVERSÉE\n\n  LDA #$08 : STA $10  ; pos_y = ligne 8\n  LDA #$03 : STA $12  ; BUG 1 — vel_y = +3 (devrait être $FD = -3)\n\nJUMP_LOOP:\n  JSR CLEAR_POS\n  LDA $12 : CLC : ADC #$01 : STA $12  ; gravité\n  LDA $10 : CLC : ADC $12  : STA $10  ; position\n  LDA $10 : CMP #$08 : BCC NO_FLOOR   ; BUG 2 — sol à ligne 8 (devrait être $14)\n  LDA #$14 : STA $10 : LDA #$FD : STA $12\nNO_FLOOR:\n  JSR DRAW_POS : JSR DELAY : JMP JUMP_LOOP\n```",
+      "template": ";  LE HÉROS — Module 5/6\n;  Gravité et saut\n\n  LDA #$08 : STA $10  ; pos_y = ligne 8\n  LDA #$03 : STA $12  ; BUG 1 — vélocité\n\nJUMP_LOOP:\n  JSR CLEAR_POS\n  LDA $12 : CLC : ADC #$01 : STA $12\n  LDA $10 : CLC : ADC $12  : STA $10\n  LDA $10 : CMP #$08 : BCC NO_FLOOR   ; BUG 2 — seuil sol\n  LDA #$14 : STA $10 : LDA #$FD : STA $12\nNO_FLOOR:\n  JSR DRAW_POS : JSR DELAY : JMP JUMP_LOOP\n\nCLEAR_POS:\n  LDA #$00 : LDX $10 : JSR CALC_ADDR\n  LDY #$00 : STA ($F0),Y : RTS\n\nDRAW_POS:\n  LDA #$07 : LDX $10 : JSR CALC_ADDR\n  LDY #$00 : STA ($F0),Y : RTS\n\nCALC_ADDR:\n  PHA : TXA : ASL:ASL:ASL:ASL:ASL : STA $F0\n  LDA #$02 : STA $F1 : PLA : RTS\n\nDELAY:\n  LDY #$06 : D2: LDX #$FF\n  D1: DEX : BNE D1 : DEY : BNE D2 : RTS\n",
       "assertions": [
         {
           "type": "register",
           "register": "A",
-          "value": 1,
-          "failMsg": "Programme boucle infinie — Stop puis Valider."
+          "value": 7,
+          "failMsg": "Boucle infinie — Stop puis Valider. Observe la trajectoire parabolique !"
         }
       ],
       "maxCycles": 100000,
       "hints": [
         {
-          "text": "Le code est complet ! Lance et observe le rebond. Essaie de changer $50 dans DELAY pour modifier la vitesse."
+          "text": "BUG 1 : $FD = -3 en complément à 2. La vélocité initiale négative fait monter le héros."
+        },
+        {
+          "text": "BUG 2 : le sol est à la ligne 20 = $14. CMP #$14."
         }
       ],
       "meta": {
+        "concepts": [
+          "Vélocité",
+          "Gravité",
+          "Complément à 2",
+          "Physique 8-bit"
+        ],
+        "estimatedMinutes": 15,
         "zaks": {
           "chapter": "Chapitre 8",
-          "page": 142,
-          "topic": "Animation — effacer/déplacer/dessiner"
-        },
-        "concepts": [
-          "JMP",
-          "CMP",
-          "ADC",
-          "STA",
-          "Animation",
-          "Rebond"
-        ],
-        "estimatedMinutes": 15
+          "page": 148,
+          "topic": "Physique de jeu"
+        }
       }
     },
     {
       "id": 30,
-      "title": "⚔️ Boss Final — La Balle Rebondissante",
-      "description": "## Le Grand Final\n\nUne balle qui rebondit sur les **4 bords** de l'écran.\n\nVariables :\n- `$10`=X (0-31), `$11`=Y (0-31)\n- `$12`=dX (`$01` ou `$FF`), `$13`=dY (`$01` ou `$FF`)\n\nAdresse pixel (X,Y) = `$0200 + Y×32 + X` → calculée par `CALC_ADDR`.\n\n**Le code est complet et fonctionnel.** Lance-le, observe, puis lis chaque bloc pour comprendre l'architecture d'un vrai moteur de jeu 8-bit.\n\n_C'est le programme que tu montreras au club._",
-      "template": "; Défi 30 — Boss Final : La Balle Rebondissante\n\nINIT:\n  LDA #$10 : STA $10   ; X=16\n  LDA #$10 : STA $11   ; Y=16\n  LDA #$01 : STA $12   ; dX=+1\n  LDA #$01 : STA $13   ; dY=+1\n\nLOOP:\n  JSR CALC_ADDR\n  LDA #$00 : LDY #$00 : STA ($F0),Y   ; efface\n\n  LDA $10 : CLC : ADC $12 : STA $10   ; bouge X\n  LDA $11 : CLC : ADC $13 : STA $11   ; bouge Y\n\n  LDA $10\n  CMP #$1F : BEQ FLIP_DX\n  CMP #$00 : BEQ FLIP_DX\n  JMP CHECK_Y\nFLIP_DX:\n  LDA #$00 : SEC : SBC $12 : STA $12\n\nCHECK_Y:\n  LDA $11\n  CMP #$1F : BEQ FLIP_DY\n  CMP #$00 : BEQ FLIP_DY\n  JMP DRAW\nFLIP_DY:\n  LDA #$00 : SEC : SBC $13 : STA $13\n\nDRAW:\n  JSR CALC_ADDR\n  LDA #$01 : LDY #$00 : STA ($F0),Y   ; dessine\n  JSR DELAY\n  JMP LOOP\n\nCALC_ADDR:\n  LDA $11 : ASL : ASL : ASL : ASL : ASL : STA $F0\n  LDA #$00 : STA $F1\n  LDA $F0 : CLC : ADC $10 : STA $F0\n  LDA $F1 : ADC #$02 : STA $F1\n  RTS\n\nDELAY:\n  LDX #$08\nD2: LDY #$FF\nD1: DEY : BNE D1\n    DEX : BNE D2\n  RTS\n",
+      "arena": 5,
+      "arena_name": "L'Animateur",
+      "title": "⚔️ BOSS FINAL — Le Grand Spectacle",
+      "description": "## 📡 Le moteur de jeu 8-bit\n\nUne boucle principale qui chaque frame : lit les entrées, met à jour la physique, teste les collisions, efface, dessine, attend.\n\n---\n\n## 🎯 Mission BOSS FINAL — Héros + balle en simultané\n\nLe héros court pendant que la balle rebondit en 2D. **5 bugs critiques** dans le moteur.\n\n```asm\n;  LE HÉROS — BOSS FINAL\n;  $10=balle_x $11=balle_y $12=dir_bx $13=dir_by $14=hero_x\n\n  LDA #$10:STA $10 : LDA #$10:STA $11\n  LDA #$01:STA $12\n  LDA #$FF:STA $13  ; BUG 1 — dir_by devrait être $01\n  LDA #$00:STA $14\n\nMAIN:\n  LDA #$00 : LDX $14 : STA $0380,X   ; efface héros\n  LDX $10 : LDY $11 : JSR ERASE_BALL\n\n  LDA $10:CLC:ADC $12:STA $10  ; bouge balle X\n  LDA $11:CLC:ADC $13:STA $11  ; bouge balle Y\n\n  LDA $10:CMP #$1F:BCC NR : LDA #$00:SEC:SBC $12:STA $12\nNR: LDA $10:CMP #$01:BCS NL : LDA #$00:SEC:SBC $12:STA $12\nNL: LDA $11:CMP #$17:BCC NB : LDA #$00:SEC:SBC $13:STA $13\nNB: LDA $11:CMP #$01:BCS NT   ; BUG 2 — devrait être BCC\n  LDA #$00:SEC:SBC $13:STA $13\nNT:\n  LDA $14:CLC:ADC #$01:STA $14\n  LDA $14:CMP #$1F:BCC NW\n  LDA #$1F:STA $14              ; BUG 3 — wrap → LDA #$00\nNW:\n  LDA #$07:LDX $14:STA $0380,X  ; dessine héros\n  LDX $10:LDY $11:JSR DRAW_BALL\n  JSR DELAY : JMP MAIN\n\nDRAW_BALL:\n  PHA:TYA:ASL:ASL:ASL:ASL:ASL:STA $F0\n  LDA #$02:STA $F1\n  LDA $F0:CLC:STX $E0:ADC $E0:STA $F0\n  PLA:LDY #$00:STA ($F0),Y:RTS\n\nERASE_BALL:\n  LDA #$00\n  JMP DRAW_BALL   ; BUG 4 — devrait être JSR puis RTS\n  RTS\n\nDELAY:\n  LDY #$08\nD2: LDX #$FF\nD1: DEX:BNE D1:DEY:BNE D2  ; BUG 5 — DEY devrait sauter vers D2 (LDX #$FF)\n  RTS\n```\n\n_🏆 5 bugs. Quand tout fonctionne, tu as terminé l'Atelier 8-Bit._",
+      "template": ";  LE HÉROS — BOSS FINAL\n;  $10=bx $11=by $12=dbx $13=dby $14=hx\n\n  LDA #$10:STA $10 : LDA #$10:STA $11\n  LDA #$01:STA $12\n  LDA #$FF:STA $13  ; BUG 1\n  LDA #$00:STA $14\n\nMAIN:\n  LDA #$00:LDX $14:STA $0380,X\n  LDX $10:LDY $11:JSR ERASE_BALL\n\n  LDA $10:CLC:ADC $12:STA $10\n  LDA $11:CLC:ADC $13:STA $11\n\n  LDA $10:CMP #$1F:BCC NR:LDA #$00:SEC:SBC $12:STA $12\nNR: LDA $10:CMP #$01:BCS NL:LDA #$00:SEC:SBC $12:STA $12\nNL: LDA $11:CMP #$17:BCC NB:LDA #$00:SEC:SBC $13:STA $13\nNB: LDA $11:CMP #$01:BCS NT  ; BUG 2\n  LDA #$00:SEC:SBC $13:STA $13\nNT:\n  LDA $14:CLC:ADC #$01:STA $14\n  LDA $14:CMP #$1F:BCC NW\n  LDA #$1F:STA $14  ; BUG 3\nNW:\n  LDA #$07:LDX $14:STA $0380,X\n  LDX $10:LDY $11:JSR DRAW_BALL\n  JSR DELAY:JMP MAIN\n\nDRAW_BALL:\n  PHA:TYA:ASL:ASL:ASL:ASL:ASL:STA $F0\n  LDA #$02:STA $F1\n  LDA $F0:CLC:STX $E0:ADC $E0:STA $F0\n  PLA:LDY #$00:STA ($F0),Y:RTS\n\nERASE_BALL:\n  LDA #$00\n  JMP DRAW_BALL  ; BUG 4\n  RTS\n\nDELAY:\n  LDY #$08\nD2: LDX #$FF\nD1: DEX:BNE D1:DEY:BNE D2  ; BUG 5 — DEY doit reboucler vers D2\n  RTS\n",
       "assertions": [
         {
           "type": "register",
           "register": "A",
-          "value": 1,
-          "failMsg": "Boucle infinie — Stop puis Valider. Bravo !"
+          "value": 7,
+          "failMsg": "Boucle infinie — Stop puis Valider. Observe le grand spectacle !"
         }
       ],
       "maxCycles": 100000,
       "hints": [
         {
-          "text": "Le code est complet ! Comprends CALC_ADDR (calcule l'adresse d'un pixel 2D), les FLIP (inversent la direction aux bords), et DELAY (ralentit l'animation)."
+          "text": "BUG 1 : dir_by = $01 pour que la balle parte vers le bas. BUG 2 : bord haut → BCC (C=0 si pos < 1)."
         },
         {
-          "text": "Envie d'aller plus loin ? Change la couleur ($01→$07), fais bouger 2 balles, ou ajoute une traînée colorée..."
+          "text": "BUG 3 : wrap héros → LDA #$00 (repart de gauche). BUG 4 : JSR DRAW_BALL puis RTS dans ERASE_BALL."
+        },
+        {
+          "text": "BUG 5 : dans DELAY, DEY:BNE D2 doit pointer vers le D2 qui fait LDX #$FF (recharge le compteur interne)."
         }
       ],
       "meta": {
+        "concepts": [
+          "Moteur de jeu",
+          "Rebond 2D",
+          "Boucle principale",
+          "Synthèse Arène 5"
+        ],
+        "estimatedMinutes": 30,
         "zaks": {
           "chapter": "Chapitre 8",
-          "page": 145,
-          "topic": "Moteur de jeu 8-bit"
-        },
-        "concepts": [
-          "JSR",
-          "RTS",
-          "ASL",
-          "ADC",
-          "SBC",
-          "CMP",
-          "Adressage indirect",
-          "Animation 2D"
-        ],
-        "estimatedMinutes": 30
+          "page": 150,
+          "topic": "Moteur de jeu"
+        }
       }
     }
   ]
