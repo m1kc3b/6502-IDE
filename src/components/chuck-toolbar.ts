@@ -73,21 +73,14 @@ const STYLES = /* css */`
     flex-shrink: 0;
   }
 
-  .tb-debug {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    padding: 8px 4px;
+  .tb-btn.debug            { color: var(--text-muted); }
+  .tb-btn.debug:hover      { background: rgba(124,106,247,.1); color: var(--accent); }
+  .tb-btn.debug.active     {
+    color: var(--accent);
+    background: rgba(124,106,247,.15);
+    border: 1px solid rgba(124,106,247,.3);
     border-radius: 8px;
-    font-size: 9px;
-    color: var(--text-muted);
-    cursor: pointer;
-    width: 42px;
-    transition: background var(--t-fast), color var(--t-fast);
   }
-  .tb-debug:hover { color: var(--text); background: var(--surface-3); }
-  .tb-debug input { cursor: pointer; accent-color: var(--accent); }
 
   .tb-speed {
     display: flex;
@@ -174,8 +167,7 @@ const TEMPLATE = /* html */`
 
   <div class="tb-sep"></div>
 
-  <label class="tb-debug" title="Debug pas à pas">
-    <input type="checkbox" id="chk-debug">
+  <button class="tb-btn debug" data-action="debug" id="btn-debug" title="Mode debug pas à pas (Étape)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
          style="width:18px;height:18px">
       <circle cx="12" cy="12" r="10"/>
@@ -183,7 +175,7 @@ const TEMPLATE = /* html */`
       <line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
     <span>Debug</span>
-  </label>
+  </button>
 
   <div class="tb-speed">
     <span>Vitesse</span>
@@ -209,19 +201,8 @@ export class ChuckToolbar extends ChuckComponent {
       this.dispatchAction(action);
     });
 
-    // Checkbox debug
-    this.shadow.getElementById('chk-debug')
-      ?.addEventListener('change', (e) => {
-        const enabled = (e.target as HTMLInputElement).checked;
-        this.emit('chuck:debug', { enabled });
-        // Mettre à jour l'état de la toolbar immédiatement :
-        // debug ON  → 'debugging'  (Étape actif, Run désactivé)
-        // debug OFF → 'assembled'  (Run actif, Étape désactivé)
-        // Seulement si on est déjà dans un état post-assemblage
-        if (['assembled', 'debugging'].includes(this._state)) {
-          this.applyState(enabled ? 'debugging' : 'assembled');
-        }
-      });
+    // Bouton debug — toggle
+    // La délégation click existante appelle dispatchAction('debug')
 
     // Slider vitesse
     const slider = this.shadow.getElementById('speed-slider') as HTMLInputElement;
@@ -237,8 +218,7 @@ export class ChuckToolbar extends ChuckComponent {
     this.sub('chuck:assemble-err',  () => this.applyState('idle'));
     this.sub('chuck:cpu-reset',     () => this.applyState('idle'));
     this.sub('chuck:cpu-halted',    () => {
-      // Si le mode debug est encore coché, rester en debugging (pas en assembled)
-      const debugOn = (this.shadow.getElementById('chk-debug') as HTMLInputElement)?.checked;
+      const debugOn = this.shadow.getElementById('btn-debug')?.classList.contains('active') ?? false;
       this.applyState(debugOn ? 'debugging' : 'assembled');
     });
     this.sub('chuck:code-changed',  () => this.applyState('idle'));
@@ -266,6 +246,17 @@ export class ChuckToolbar extends ChuckComponent {
       case 'reset':       this.emit('chuck:reset',       undefined); break;
       case 'hexdump':     this.emit('chuck:hexdump',     undefined); break;
       case 'disassemble': this.emit('chuck:disassemble', undefined); break;
+      case 'debug': {
+        // Toggle debug : ne s'active que si on est assemblé ou déjà en debug
+        if (!['assembled', 'debugging'].includes(this._state)) break;
+        const nowDebugging = this._state !== 'debugging';
+        // Mettre à jour visuellement le bouton
+        const dbgBtn = this.shadow.getElementById('btn-debug');
+        dbgBtn?.classList.toggle('active', nowDebugging);
+        this.emit('chuck:debug', { enabled: nowDebugging });
+        this.applyState(nowDebugging ? 'debugging' : 'assembled');
+        break;
+      }
     }
   }
 

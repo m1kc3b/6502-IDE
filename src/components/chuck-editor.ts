@@ -224,11 +224,90 @@ const chuckTheme = EditorView.theme({
 // Autocompletion — opcodes 6502
 // ─────────────────────────────────────────────────────────────
 
-const opcodeCompletions = [...OPCODES_6502].sort().map(op => ({
-  label:  op,
-  type:   'keyword',
-  info:   `Instruction 6502 : ${op}`,
-}));
+// ─────────────────────────────────────────────────────────────
+// Descriptions des opcodes pour l'autocomplétion
+// ─────────────────────────────────────────────────────────────
+const OPCODE_DOCS: Record<string, { detail: string; info: string }> = {
+  // Chargement
+  LDA: { detail: 'Charge → A',        info: 'LDA val — Charge une valeur dans l\'Accumulateur. Flags: N, Z' },
+  LDX: { detail: 'Charge → X',        info: 'LDX val — Charge une valeur dans le registre X. Flags: N, Z' },
+  LDY: { detail: 'Charge → Y',        info: 'LDY val — Charge une valeur dans le registre Y. Flags: N, Z' },
+  // Stockage
+  STA: { detail: 'Stocke A → mém',    info: 'STA addr — Écrit l\'Accumulateur en mémoire.' },
+  STX: { detail: 'Stocke X → mém',    info: 'STX addr — Écrit le registre X en mémoire.' },
+  STY: { detail: 'Stocke Y → mém',    info: 'STY addr — Écrit le registre Y en mémoire.' },
+  // Transferts
+  TAX: { detail: 'A → X',             info: 'TAX — Copie A dans X. Flags: N, Z' },
+  TAY: { detail: 'A → Y',             info: 'TAY — Copie A dans Y. Flags: N, Z' },
+  TXA: { detail: 'X → A',             info: 'TXA — Copie X dans A. Flags: N, Z' },
+  TYA: { detail: 'Y → A',             info: 'TYA — Copie Y dans A. Flags: N, Z' },
+  TXS: { detail: 'X → SP',            info: 'TXS — Copie X dans le Stack Pointer.' },
+  TSX: { detail: 'SP → X',            info: 'TSX — Copie le Stack Pointer dans X. Flags: N, Z' },
+  // Arithmétique
+  ADC: { detail: 'A + val + C → A',   info: 'ADC val — Addition avec Carry. Toujours CLC avant ! Flags: N, V, Z, C' },
+  SBC: { detail: 'A - val - C → A',   info: 'SBC val — Soustraction avec Carry. Toujours SEC avant ! Flags: N, V, Z, C' },
+  // Incréments
+  INX: { detail: 'X + 1',             info: 'INX — Incrémente X de 1. Flags: N, Z' },
+  INY: { detail: 'Y + 1',             info: 'INY — Incrémente Y de 1. Flags: N, Z' },
+  DEX: { detail: 'X - 1',             info: 'DEX — Décrémente X de 1. Flags: N, Z' },
+  DEY: { detail: 'Y - 1',             info: 'DEY — Décrémente Y de 1. Flags: N, Z' },
+  INC: { detail: 'mém + 1',           info: 'INC addr — Incrémente une valeur en mémoire. Flags: N, Z' },
+  DEC: { detail: 'mém - 1',           info: 'DEC addr — Décrémente une valeur en mémoire. Flags: N, Z' },
+  // Comparaisons
+  CMP: { detail: 'Compare A',         info: 'CMP val — Compare A sans modifier A. Flags: N, Z, C' },
+  CPX: { detail: 'Compare X',         info: 'CPX val — Compare X sans modifier X. Flags: N, Z, C' },
+  CPY: { detail: 'Compare Y',         info: 'CPY val — Compare Y sans modifier Y. Flags: N, Z, C' },
+  // Sauts
+  JMP: { detail: 'Saute à label',     info: 'JMP addr — Saut inconditionnel. Ex: JMP BOUCLE' },
+  JSR: { detail: 'Appelle fonction',  info: 'JSR addr — Jump to Subroutine. Sauvegarde PC sur la pile.' },
+  RTS: { detail: 'Retour fonction',   info: 'RTS — Return from Subroutine. Récupère PC depuis la pile.' },
+  RTI: { detail: 'Retour interrupt',  info: 'RTI — Return from Interrupt. Restaure PC et P depuis la pile.' },
+  // Branchements
+  BEQ: { detail: 'Saute si Z=1',      info: 'BEQ label — Saute si résultat nul (Z=1). "Branch if Equal"' },
+  BNE: { detail: 'Saute si Z=0',      info: 'BNE label — Saute si résultat non nul (Z=0). "Branch if Not Equal"' },
+  BCC: { detail: 'Saute si C=0',      info: 'BCC label — Saute si Carry clair (A < val). "Branch if Carry Clear"' },
+  BCS: { detail: 'Saute si C=1',      info: 'BCS label — Saute si Carry positionné. "Branch if Carry Set"' },
+  BMI: { detail: 'Saute si N=1',      info: 'BMI label — Saute si négatif (bit 7 = 1). "Branch if Minus"' },
+  BPL: { detail: 'Saute si N=0',      info: 'BPL label — Saute si positif (bit 7 = 0). "Branch if Plus"' },
+  BVC: { detail: 'Saute si V=0',      info: 'BVC label — Saute si pas de débordement signé.' },
+  BVS: { detail: 'Saute si V=1',      info: 'BVS label — Saute si débordement signé.' },
+  // Logique
+  AND: { detail: 'A ET val → A',      info: 'AND val — ET logique bit à bit. Masque les bits. Flags: N, Z' },
+  ORA: { detail: 'A OU val → A',      info: 'ORA val — OU inclusif bit à bit. Fusionne les bits. Flags: N, Z' },
+  EOR: { detail: 'A XOR val → A',     info: 'EOR val — OU exclusif. Inverse les bits masqués. Flags: N, Z' },
+  BIT: { detail: 'Test bits',         info: 'BIT addr — Teste les bits sans modifier A. Flags: N=bit7, V=bit6, Z=A&mém' },
+  // Décalages
+  ASL: { detail: 'Déc gauche × 2',    info: 'ASL — Décalage gauche = × 2. Bit 7 → Carry. Flags: N, Z, C' },
+  LSR: { detail: 'Déc droite ÷ 2',    info: 'LSR — Décalage droit = ÷ 2. Bit 0 → Carry. Flags: N, Z, C' },
+  ROL: { detail: 'Rotation gauche',   info: 'ROL — Rotation gauche. Carry → bit 0, bit 7 → Carry.' },
+  ROR: { detail: 'Rotation droite',   info: 'ROR — Rotation droite. Carry → bit 7, bit 0 → Carry.' },
+  // Pile
+  PHA: { detail: 'A → pile',          info: 'PHA — Push A sur la pile. Sauvegarde A.' },
+  PLA: { detail: 'pile → A',          info: 'PLA — Pull A depuis la pile. Restaure A. Flags: N, Z' },
+  PHP: { detail: 'P → pile',          info: 'PHP — Push Processor Status sur la pile.' },
+  PLP: { detail: 'pile → P',          info: 'PLP — Pull Processor Status depuis la pile.' },
+  // Flags
+  CLC: { detail: 'Efface Carry',      info: 'CLC — Clear Carry. Toujours avant ADC !' },
+  SEC: { detail: 'Active Carry',      info: 'SEC — Set Carry. Toujours avant SBC !' },
+  CLV: { detail: 'Efface oVerflow',   info: 'CLV — Clear oVerflow flag.' },
+  CLD: { detail: 'Efface Decimal',    info: 'CLD — Clear Decimal mode.' },
+  SED: { detail: 'Active Decimal',    info: 'SED — Set Decimal mode (BCD).' },
+  CLI: { detail: 'Efface Interrupt',  info: 'CLI — Clear Interrupt disable.' },
+  SEI: { detail: 'Active Interrupt',  info: 'SEI — Set Interrupt disable.' },
+  // Contrôle
+  NOP: { detail: 'Ne fait rien',      info: 'NOP — No Operation. Gaspille 2 cycles CPU.' },
+  BRK: { detail: 'Arrêt',             info: 'BRK — Break. Arrête le programme dans Chuck IDE.' },
+};
+
+const opcodeCompletions = [...OPCODES_6502].sort().map(op => {
+  const doc = OPCODE_DOCS[op];
+  return {
+    label:  op,
+    type:   'keyword',
+    detail: doc?.detail ?? 'Instruction 6502',
+    info:   doc?.info   ?? `Instruction 6502 : ${op}`,
+  };
+});
 
 function asm6502Completions(context: import('@codemirror/autocomplete').CompletionContext) {
   const word = context.matchBefore(/[A-Za-z]+/);

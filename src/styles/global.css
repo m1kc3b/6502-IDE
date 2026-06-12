@@ -112,6 +112,20 @@ button {
   overflow: hidden;
 }
 
+/* ── Challenge aside — panneau fixe à droite ────────────────── */
+/* Occupe toute la hauteur du workspace, largeur fixe.          */
+/* Visible uniquement quand un défi est chargé (.has-challenge) */
+chuck-challenge-panel {
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  transition: width .2s ease;
+  border-left: 1px solid var(--border);
+}
+chuck-challenge-panel.panel-open {
+  width: 340px;
+}
+
 /* ── Status bar ────────────────────────────────────────────── */
 #statusbar {
   height: var(--statusbar-h);

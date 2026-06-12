@@ -35,10 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const challengeManager = new ChallengeManager();
   challengeManager.init();
 
-  // ── Titlebar — toggles modales ───────────────────────────
+  // ── Titlebar — toggles modales flottantes ────────────────
   const registersEl  = document.getElementById('modal-registers')  as (HTMLElement & { toggle(): void }) | null;
   const memoryEl     = document.getElementById('modal-memory')      as (HTMLElement & { toggle(): void }) | null;
-  const challengeEl  = document.getElementById('modal-challenge')   as (HTMLElement & { toggle(): void; show(): void }) | null;
+  const challengeAside = document.getElementById('challenge-aside') as HTMLElement | null;
 
   document.getElementById('btn-show-display')
     ?.addEventListener('click', () => displayEl?.toggle());
@@ -47,18 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-show-memory')
     ?.addEventListener('click', () => memoryEl?.toggle());
 
-  // Bouton "Défi" :
-  // - Si un défi est en cours → toggle le panneau
-  // - Sinon → navigue vers ?challenge=1 (premier défi)
-  document.getElementById('btn-show-challenge')
-    ?.addEventListener('click', () => {
-      if (challengeManager.current) {
-        challengeEl?.toggle();
-      } else {
-        bus.emit('chuck:goto-challenge', { id: 1 });
-        challengeEl?.show();
-      }
-    });
+  // Ouvrir le panneau défi (aside) quand un défi est chargé
+  function openChallengeAside(): void {
+    challengeAside?.classList.add('panel-open');
+  }
+  function closeChallengeAside(): void {
+    challengeAside?.classList.remove('panel-open');
+  }
 
   // ── Titre de la page et de la titlebar ──────────────────
 
@@ -67,19 +62,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mode libre au démarrage (pas de ?challenge=X)
   // Le titre par défaut dans index.html est déjà "Chuck IDE"
 
-  // Quand un défi est chargé : met à jour titre + <title>
+  // Quand un défi est chargé : ouvrir l'aside + titres
   bus.on('chuck:challenge-loaded', ({ challenge }) => {
     const label = `Jour ${challenge.id} — ${challenge.title}`;
-    titlebarFile.textContent      = label;
-    document.title                = `${label} — Chuck IDE`;
+    titlebarFile.textContent = label;
+    document.title           = `${label} — Chuck IDE`;
+    openChallengeAside();
   });
 
-  // Quand on revient en mode libre (navigation arrière ou reset URL)
-  // Note : le cast any est nécessaire car IDE_FREE_MODE n'est pas dans ChuckEventMap
-  // Il est émis directement sans typage strict
+  // Mode libre — fermer l'aside
   (bus as any).on('chuck:ide-free', () => {
     titlebarFile.textContent = 'mode libre';
     document.title           = "Chuck IDE — L'Atelier 8-Bit";
+    closeChallengeAside();
   });
   const sbState  = document.getElementById('sb-state')!;
   const sbCursor = document.getElementById('sb-cursor')!;

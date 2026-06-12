@@ -43,13 +43,6 @@
           </svg>
           Mémoire
         </button>
-        <button class="titlebar-pill" id="btn-show-challenge" title="Consigne du défi" style="color: var(--green)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 11l3 3L22 4"/>
-            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-          </svg>
-          Défi
-        </button>
       </div>
     </header>
 
@@ -62,8 +55,8 @@
       <!-- Editor (CodeMirror) -->
       <chuck-editor id="editor"></chuck-editor>
 
-      <!-- Console -->
-      <chuck-console id="console-panel"></chuck-console>
+      <!-- Challenge aside — panneau fixe à droite -->
+      <chuck-challenge-panel id="challenge-aside"></chuck-challenge-panel>
 
     </div>
 
@@ -85,11 +78,14 @@
 
   </div>
 
-  <!-- ── Floating modals ─────────────────────────────────── -->
-  <chuck-display   id="modal-display"    style="top:80px; left:120px;"></chuck-display>
-  <chuck-registers id="modal-registers"  style="top:80px; left:450px;"></chuck-registers>
-  <chuck-memory-dump id="modal-memory"   style="top:80px; left:800px;"></chuck-memory-dump>
-  <chuck-challenge-panel id="modal-challenge" style="top:80px; right:20px;"></chuck-challenge-panel>
+  <!-- ── Floating modals — empilées près du bord droit ──── -->
+  <!-- Ordre droite→gauche : mémoire, registres, écran        -->
+  <chuck-memory-dump id="modal-memory"
+    style="top:66px; right:20px;"></chuck-memory-dump>
+  <chuck-registers   id="modal-registers"
+    style="top:66px; right:440px;"></chuck-registers>
+  <chuck-display     id="modal-display"
+    style="top:66px; right:770px;"></chuck-display>
 
   <script type="module" src="/src/main.ts"></script>
 </body>
