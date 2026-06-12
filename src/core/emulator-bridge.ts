@@ -53,7 +53,6 @@ declare global {
 /* ── Bridge ──────────────────────────────────────────────────── */
 export class EmulatorBridge {
   private lastCodeLength = 0;
-  private monitorAddr    = 0x0000;
   private unsubscribers: Array<() => void> = [];
 
   constructor() {
@@ -157,7 +156,6 @@ export class EmulatorBridge {
   }
 
   private goto(addr: number): void {
-    this.monitorAddr = addr;
     CPU.gotoAddr(addr);
     bus.emit('chuck:cpu-updated', this.reg());
     bus.emit('chuck:log', {

@@ -1,30 +1,248 @@
 /* ─────────────────────────────────────────────────────────────
    Chuck IDE — components/chuck-editor.ts
    Web Component <chuck-editor>
-   Éditeur de code — textarea enrichi (étape 1).
-   CodeMirror 6 sera branché à l'étape 3.
+   Tâche 3.1 — CodeMirror 6 intégré dans le Shadow DOM
+   Tâche 3.2 — Coloration syntaxique ASM 6502 + breakpoints gutter
+   Tâche 6.2 — Export .asm
    ───────────────────────────────────────────────────────────── */
 
 import { ChuckComponent } from '../core/base-component.js';
-import { bus }            from '../core/bus.js';
 
-const DEFAULT_SOURCE = `; Chuck IDE — L'Atelier 8-Bit
-; Remplissage aléatoire de l'écran 32×32
-; $0200–$05FF = pixels | $FE = rand | $FF = touche
+// ── CodeMirror 6 ─────────────────────────────────────────────
+import { EditorState }         from '@codemirror/state';
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  drawSelection,
+  rectangularSelection,
+  crosshairCursor,
+  gutter,
+  GutterMarker,
+}                              from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { indentOnInput, syntaxHighlighting, HighlightStyle }    from '@codemirror/language';
+import { searchKeymap, highlightSelectionMatches }               from '@codemirror/search';
+import { autocompletion, completionKeymap }                      from '@codemirror/autocomplete';
+import { StateField, StateEffect, RangeSet }                     from '@codemirror/state';
+import { tags as t }                                             from '@lezer/highlight';
+import {
+  StreamLanguage,
+  type StreamParser,
+}                                                                from '@codemirror/language';
 
-  LDX #$00       ; index pixel = 0
+// ─────────────────────────────────────────────────────────────
+// TÂCHE 3.2 — Grammaire ASM 6502 (StreamParser)
+// ─────────────────────────────────────────────────────────────
 
-loop:
-  LDA $FE        ; couleur aléatoire
-  STA $0200,X
-  STA $0300,X
-  STA $0400,X
-  STA $0500,X
-  INX
-  CPX #$00
-  BNE loop
-  BRK
-`;
+const OPCODES_6502 = new Set([
+  'ADC','AND','ASL','BCC','BCS','BEQ','BIT','BMI','BNE','BPL',
+  'BRK','BVC','BVS','CLC','CLD','CLI','CLV','CMP','CPX','CPY',
+  'DEC','DEX','DEY','EOR','INC','INX','INY','JMP','JSR','LDA',
+  'LDX','LDY','LSR','NOP','ORA','PHA','PHP','PLA','PLP','ROL',
+  'ROR','RTI','RTS','SBC','SEC','SED','SEI','STA','STX','STY',
+  'TAX','TAY','TSX','TXA','TXS','TYA',
+]);
+
+const asm6502Parser: StreamParser<null> = {
+  name: 'asm6502',
+  startState: () => null,
+  token(stream) {
+    // Commentaires
+    if (stream.match(/^;.*/)) return 'comment';
+    // Whitespace
+    if (stream.eatSpace()) return null;
+    // Labels (mot suivi de :)
+    if (stream.match(/^[A-Za-z_][A-Za-z0-9_]*(?=\s*:)/)) return 'labelName';
+    // Mnémoniques
+    const opMatch = stream.match(/^([A-Za-z]{2,4})/);
+    if (opMatch) {
+      if (OPCODES_6502.has((opMatch as RegExpMatchArray)[0].toUpperCase())) return 'keyword';
+      return 'variableName';
+    }
+    // Adresse hex $xxxx
+    if (stream.match(/^\$[0-9a-fA-F]+/)) return 'number';
+    // Binaire %xxxxxxxx
+    if (stream.match(/^%[01]+/)) return 'number';
+    // Décimal
+    if (stream.match(/^\d+/)) return 'number';
+    // Chaîne / char
+    if (stream.match(/^'.'|^"[^"]*"/)) return 'string';
+    // Directives .byte .org DCB
+    if (stream.match(/^\.[A-Za-z]+/)) return 'meta';
+    if (stream.match(/^(?:DCB|DB)\b/i)) return 'meta';
+    // Registres X Y A
+    if (stream.match(/^[XYA](?=\s*[,);\n]|$)/)) return 'typeName';
+    // Opérateurs & ponctuation
+    if (stream.match(/^[#(),]/)) return 'operator';
+    stream.next();
+    return null;
+  },
+};
+
+const asm6502Language = StreamLanguage.define(asm6502Parser);
+
+// Mapping tokens → highlight style
+const chuckHighlight = HighlightStyle.define([
+  { tag: t.comment,       color: '#6a9955', fontStyle: 'italic' },
+  { tag: t.keyword,       color: '#569cd6', fontWeight: '600' },   // opcodes
+  { tag: t.number,        color: '#b5cea8' },                       // hex/dec/bin
+  { tag: t.string,        color: '#ce9178' },
+  { tag: t.meta,          color: '#c586c0' },                       // directives
+  { tag: t.labelName,     color: '#dcdcaa' },                       // labels
+  { tag: t.typeName,      color: '#4ec9b0' },                       // X Y A
+  { tag: t.operator,      color: '#d4d4d4' },
+  { tag: t.variableName,  color: '#9cdcfe' },
+]);
+
+// ─────────────────────────────────────────────────────────────
+// TÂCHE 3.2 — Gutter Breakpoints
+// ─────────────────────────────────────────────────────────────
+
+// Marqueur visuel — rond rouge dans la gouttière
+class BreakpointMarker extends GutterMarker {
+  toDOM(): Text { 
+    const span = document.createElement('span');
+    span.className = 'bp-dot';
+    return span as unknown as Text;
+  }
+}
+const bpMarker = new BreakpointMarker();
+
+// StateEffect pour ajouter/supprimer un breakpoint
+const toggleBreakpoint = StateEffect.define<number>(); // line number (1-based)
+
+// StateField qui maintient le Set des lignes avec breakpoint
+const breakpointField = StateField.define<RangeSet<GutterMarker>>({
+  create: () => RangeSet.empty,
+  update(markers, tr) {
+    markers = markers.map(tr.changes);
+    for (const effect of tr.effects) {
+      if (effect.is(toggleBreakpoint)) {
+        const line = tr.state.doc.line(effect.value);
+        let found  = false;
+        markers.between(line.from, line.from, () => { found = true; });
+        markers = found
+          ? markers.update({ filter: (from) => from !== line.from })
+          : markers.update({ add: [bpMarker.range(line.from)] });
+      }
+    }
+    return markers;
+  },
+});
+
+// Gouttière breakpoint — clic pour toggler
+const breakpointGutter = gutter({
+  class: 'cm-breakpoints',
+  markers: (view) => view.state.field(breakpointField),
+  initialSpacer: () => bpMarker,
+  domEventHandlers: {
+    mousedown(view, line) {
+      view.dispatch({
+        effects: toggleBreakpoint.of(view.state.doc.lineAt(line.from).number),
+      });
+      return true;
+    },
+  },
+});
+
+// ─────────────────────────────────────────────────────────────
+// Thème CodeMirror (aligné sur les tokens CSS de Chuck IDE)
+// ─────────────────────────────────────────────────────────────
+
+const chuckTheme = EditorView.theme({
+  '&': {
+    fontSize:        '13px',
+    height:          '100%',
+    background:      'var(--bg, #0f0f0f)',
+    color:           'var(--text, #e2e2e2)',
+    fontFamily:      "'JetBrains Mono','Fira Code','Cascadia Code','Consolas',monospace",
+  },
+  '.cm-content': {
+    caretColor:      'var(--accent, #7c6af7)',
+    padding:         '0',
+    lineHeight:      '1.75',
+  },
+  '.cm-scroller': { overflow: 'auto' },
+  '.cm-focused':  { outline: 'none' },
+
+  // Sélection
+  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
+    background: 'rgba(124,106,247,0.25)',
+  },
+  '.cm-selectionMatch': { background: 'rgba(124,106,247,0.15)' },
+
+  // Ligne active
+  '.cm-activeLine':       { background: 'rgba(255,255,255,0.03)' },
+  '.cm-activeLineGutter': { background: 'rgba(255,255,255,0.04)' },
+
+  // Numéros de ligne
+  '.cm-lineNumbers': {
+    color:       'var(--text-muted, #555)',
+    minWidth:    '42px',
+    paddingRight:'8px',
+  },
+  '.cm-lineNumbers .cm-activeLineGutter': {
+    color: 'var(--text-dim, #999)',
+  },
+
+  // Gouttière principale
+  '.cm-gutters': {
+    background:  'var(--bg, #0f0f0f)',
+    borderRight: '1px solid var(--border, #2a2a2a)',
+    color:       'var(--text-muted, #555)',
+  },
+
+  // Gutter breakpoints
+  '.cm-breakpoints': {
+    width:       '16px',
+    paddingLeft: '2px',
+    cursor:      'pointer',
+  },
+  '.bp-dot': {
+    display:         'inline-block',
+    width:           '10px',
+    height:          '10px',
+    borderRadius:    '50%',
+    background:      '#f87171',
+    boxShadow:       '0 0 4px #f87171aa',
+    marginTop:       '5px',
+  },
+
+  // Curseur
+  '.cm-cursor': { borderLeftColor: 'var(--accent, #7c6af7)' },
+
+  // Scrollbar
+  '.cm-scroller::-webkit-scrollbar':       { width: '6px', height: '6px' },
+  '.cm-scroller::-webkit-scrollbar-track': { background: 'transparent' },
+  '.cm-scroller::-webkit-scrollbar-thumb': { background: '#2f2f2f', borderRadius: '3px' },
+}, { dark: true });
+
+// ─────────────────────────────────────────────────────────────
+// Autocompletion — opcodes 6502
+// ─────────────────────────────────────────────────────────────
+
+const opcodeCompletions = [...OPCODES_6502].sort().map(op => ({
+  label:  op,
+  type:   'keyword',
+  info:   `Instruction 6502 : ${op}`,
+}));
+
+function asm6502Completions(context: import('@codemirror/autocomplete').CompletionContext) {
+  const word = context.matchBefore(/[A-Za-z]+/);
+  if (!word || (word.from === word.to && !context.explicit)) return null;
+  const q = word.text.toUpperCase();
+  return {
+    from:    word.from,
+    options: opcodeCompletions.filter(c => c.label.startsWith(q)),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Styles Shadow DOM (wrapper + console)
+// ─────────────────────────────────────────────────────────────
 
 const STYLES = /* css */`
   @import '/src/styles/tokens.css';
@@ -39,7 +257,7 @@ const STYLES = /* css */`
     overflow: hidden;
   }
 
-  /* Tab bar */
+  /* ── Tab bar ─────────────────────────────────────────────── */
   .tab-bar {
     height: 34px;
     background: var(--surface);
@@ -57,7 +275,7 @@ const STYLES = /* css */`
     font-size: 12px;
     color: var(--text-muted);
     border-right: 1px solid var(--border);
-    cursor: pointer;
+    cursor: default;
     user-select: none;
     position: relative;
   }
@@ -69,58 +287,37 @@ const STYLES = /* css */`
     height: 1px;
     background: var(--accent);
   }
-  .tab-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--accent);
-    opacity: .7;
-  }
+  .tab-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: .7; }
 
-  /* Editor zone */
-  .editor-zone {
-    display: flex;
+  .tab-export {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: background var(--t-fast), color var(--t-fast);
+  }
+  .tab-export:hover { background: var(--surface-3); color: var(--text); }
+
+  /* ── CodeMirror host ─────────────────────────────────────── */
+  #cm-host {
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
-
-  /* Line numbers */
-  .line-numbers {
-    padding: 18px 10px 18px 8px;
-    background: var(--bg);
-    color: var(--text-muted);
-    text-align: right;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.75;
-    user-select: none;
-    overflow: hidden;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border);
-    min-width: 42px;
-  }
-  .line-numbers span { display: block; }
-
-  /* Textarea */
-  textarea {
+  #cm-host .cm-editor {
     flex: 1;
-    background: var(--bg);
-    color: var(--text);
-    border: none;
-    outline: none;
-    resize: none;
-    padding: 18px 22px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.75;
-    tab-size: 2;
-    caret-color: var(--accent);
-    overflow: auto;
-    white-space: pre;
+    min-height: 0;
+    height: 100%;
   }
-  textarea::selection { background: rgba(124, 106, 247, 0.25); }
 
-  /* Console bande */
+  /* ── Console ─────────────────────────────────────────────── */
   .console-strip {
     height: var(--console-h);
     min-height: 60px;
@@ -166,38 +363,128 @@ const STYLES = /* css */`
     font-size: 11.5px;
     line-height: 1.6;
   }
-  .log { display: block; }
+  .log      { display: block; }
   .log-ok   { color: var(--green); }
   .log-err  { color: var(--red); }
   .log-info { color: var(--cyan); }
   .log-hex  { color: var(--amber); }
   .log-dim  { color: var(--text-muted); }
 
-  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar       { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 3px; }
 `;
 
-export class ChuckEditor extends ChuckComponent {
-  private _ta!:      HTMLTextAreaElement;
-  private _ln!:      HTMLDivElement;
-  private _output!:  HTMLDivElement;
+// ─────────────────────────────────────────────────────────────
+// Code de démo affiché au lancement sur "/"
+// Montre : boucle, palette, écran, données statiques
+// ─────────────────────────────────────────────────────────────
 
-  /** Exposé pour la toolbar (appel direct via ref DOM) */
+const DEFAULT_SOURCE = `; Chuck IDE — L'Atelier 8-Bit
+; ─────────────────────────────────────────
+; Ce code peint un arc-en-ciel sur l'écran.
+; Lance-le avec le bouton ▶ Run !
+;
+; Utilise ?challenge=1 dans l'URL pour
+; commencer les défis depuis le début.
+; ─────────────────────────────────────────
+
+  LDX #$00       ; X = index pixel courant
+
+BOUCLE:
+  LDA COULEURS,X ; charge la couleur X
+  AND #$0F       ; reste dans la palette (0-15)
+  STA $0200,X    ; écrit le pixel à l'écran
+  STA $0300,X    ; ligne 2
+  STA $0400,X    ; ligne 3
+  STA $0500,X    ; ligne 4
+  INX
+  BNE BOUCLE     ; tant que X != 0 (256 pixels)
+
+  BRK
+
+; ── Palette arc-en-ciel (256 octets) ────
+COULEURS:
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+  .byte $01,$02,$03,$04,$05,$06,$07,$08
+  .byte $09,$0A,$0B,$0C,$0D,$0E,$0F,$00
+  .byte $00,$0F,$0E,$0D,$0C,$0B,$0A,$09
+  .byte $08,$07,$06,$05,$04,$03,$02,$01
+`;
+
+// ─────────────────────────────────────────────────────────────
+// Web Component
+// ─────────────────────────────────────────────────────────────
+
+export class ChuckEditor extends ChuckComponent {
+  private _view!:          EditorView;
+  private _output!:        HTMLDivElement;
+  private _tabLabel!:      HTMLSpanElement;
+  private _currentId       = 0;
+  private _autosaveTimer:  ReturnType<typeof setTimeout> | null = null;
+
+  // ── API publique ────────────────────────────────────────
   getSource(): string {
-    return this._ta?.value ?? '';
+    return this._view?.state.doc.toString() ?? '';
   }
 
+  setSource(code: string): void {
+    if (!this._view) return;
+    this._view.dispatch({
+      changes: { from: 0, to: this._view.state.doc.length, insert: code },
+    });
+  }
+
+  getBreakpoints(): number[] {
+    if (!this._view) return [];
+    const markers = this._view.state.field(breakpointField);
+    const lines: number[] = [];
+    const iter = markers.iter();
+    while (iter.value) {
+      lines.push(this._view.state.doc.lineAt(iter.from).number);
+      iter.next();
+    }
+    return lines;
+  }
+
+  // ── Render ──────────────────────────────────────────────
   protected render(): void {
     this.shadow.innerHTML = `<style>${STYLES}</style>
     <div class="tab-bar">
-      <div class="tab active"><span class="tab-dot"></span>untitled.asm</div>
+      <div class="tab active">
+        <span class="tab-dot"></span>
+        <span id="tab-label">untitled.asm</span>
+        <button class="tab-export" id="export-btn" title="Télécharger .asm">↓ .asm</button>
+      </div>
     </div>
-    <div class="editor-zone">
-      <div class="line-numbers" id="ln"></div>
-      <textarea id="ta" spellcheck="false" autocorrect="off" autocapitalize="off"
-        placeholder="; Écrivez votre programme 6502 ici…"></textarea>
-    </div>
+    <div id="cm-host"></div>
     <div class="console-strip">
       <div class="console-header">
         <span class="console-title">Console</span>
@@ -207,73 +494,136 @@ export class ChuckEditor extends ChuckComponent {
     </div>`;
   }
 
+  // ── Setup ───────────────────────────────────────────────
   protected setup(): void {
-    this._ta     = this.shadow.getElementById('ta')     as HTMLTextAreaElement;
-    this._ln     = this.shadow.getElementById('ln')     as HTMLDivElement;
-    this._output = this.shadow.getElementById('output') as HTMLDivElement;
+    this._output   = this.shadow.getElementById('output')    as HTMLDivElement;
+    this._tabLabel = this.shadow.getElementById('tab-label') as HTMLSpanElement;
+    const cmHost   = this.shadow.getElementById('cm-host')!;
 
-    this._ta.value = DEFAULT_SOURCE;
-    this.updateLineNumbers();
+    // ── Construire l'EditorView ─────────────────────────
+    this._view = new EditorView({
+      state: EditorState.create({
+        doc: DEFAULT_SOURCE,
+        extensions: [
+          // Histoire
+          history(),
+          // Keymaps
+          keymap.of([
+            ...defaultKeymap,
+            ...historyKeymap,
+            ...searchKeymap,
+            ...completionKeymap,
+            indentWithTab,
+          ]),
+          // UI
+          lineNumbers(),
+          highlightActiveLine(),
+          highlightActiveLineGutter(),
+          drawSelection(),
+          rectangularSelection(),
+          crosshairCursor(),
+          highlightSelectionMatches(),
+          indentOnInput(),
+          // Breakpoints
+          breakpointField,
+          breakpointGutter,
+          // Langue + coloration
+          asm6502Language,
+          syntaxHighlighting(chuckHighlight),
+          // Autocompletion
+          autocompletion({ override: [asm6502Completions] }),
+          // Thème
+          chuckTheme,
+          // Listener de changement
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              this.emit('chuck:code-changed', undefined);
+              this._scheduleAutosave();
+            }
+            if (update.selectionSet) {
+              this._emitCursor();
+            }
+          }),
+        ],
+      }),
+      parent: cmHost,
+    });
 
-    // Éditeur
-    this._ta.addEventListener('input', () => {
-      this.updateLineNumbers();
-      this.emit('chuck:code-changed', undefined);
+    // ── Contrôles ────────────────────────────────────────
+    this.shadow.getElementById('clear-btn')
+      ?.addEventListener('click', () => {
+        this._output.innerHTML = '';
+        this._log('Console effacée.', 'dim');
+      });
+
+    this.shadow.getElementById('export-btn')
+      ?.addEventListener('click', () => this._exportAsm());
+
+    // ── Bus ───────────────────────────────────────────────
+    this.sub('chuck:log', ({ text, level }) => this._log(text, level));
+
+    this.sub('chuck:challenge-loaded', ({ challenge, code }) => {
+      this._currentId = challenge.id;
+      this._tabLabel.textContent = `jour_${String(challenge.id).padStart(2,'0')}.asm`;
+      this.setSource(code);
+      this._emitCursor();
+      this._log(`Défi #${challenge.id} — ${challenge.title}`, 'info');
     });
-    this._ta.addEventListener('scroll', () => {
-      this._ln.scrollTop = this._ta.scrollTop;
-    });
-    this._ta.addEventListener('click',  () => this.emitCursor());
-    this._ta.addEventListener('keyup',  () => this.emitCursor());
-    this._ta.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const s = this._ta.selectionStart;
-        const v = this._ta.value;
-        this._ta.value = v.slice(0, s) + '  ' + v.slice(this._ta.selectionEnd);
-        this._ta.selectionStart = this._ta.selectionEnd = s + 2;
-        this.updateLineNumbers();
-        this.emit('chuck:code-changed', undefined);
+
+    // Mettre le focus sur l'éditeur au chargement
+    requestAnimationFrame(() => this._view.focus());
+  }
+
+  // ── Autosave (Tâche 2.3) ────────────────────────────────
+  private _scheduleAutosave(): void {
+    if (this._autosaveTimer) clearTimeout(this._autosaveTimer);
+    this._autosaveTimer = setTimeout(() => {
+      if (this._currentId > 0) {
+        this.emit('chuck:autosave', { id: this._currentId, code: this.getSource() });
       }
-    });
-
-    // Effacer console
-    this.shadow.getElementById('clear-btn')?.addEventListener('click', () => {
-      this._output.innerHTML = '';
-      this.log('Console effacée.', 'dim');
-    });
-
-    // Écouter les logs du Bus
-    this.sub('chuck:log', ({ text, level }) => this.log(text, level));
+    }, 800);
   }
 
-  private updateLineNumbers(): void {
-    const count = this._ta.value.split('\n').length;
-    this._ln.innerHTML = Array.from(
-      { length: count },
-      (_, i) => `<span>${i + 1}</span>`,
-    ).join('');
+  // ── Export .asm (Tâche 6.2) ─────────────────────────────
+  private _exportAsm(): void {
+    const code     = this.getSource();
+    const filename = this._currentId > 0
+      ? `chuck_day_${this._currentId}.asm`
+      : 'programme.asm';
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    this._log(`"${filename}" téléchargé.`, 'ok');
   }
 
-  private emitCursor(): void {
-    const before = this._ta.value.slice(0, this._ta.selectionStart);
-    const lines  = before.split('\n');
+  // ── Helpers ──────────────────────────────────────────────
+  private _emitCursor(): void {
+    if (!this._view) return;
+    const head  = this._view.state.selection.main.head;
+    const line  = this._view.state.doc.lineAt(head);
     this.emit('chuck:cursor-moved', {
-      line: lines.length,
-      col:  lines[lines.length - 1]!.length + 1,
+      line: line.number,
+      col:  head - line.from + 1,
     });
   }
 
-  private log(text: string, level: string): void {
+  private _log(text: string, level: string): void {
     const ts   = new Date().toLocaleTimeString('fr-FR', {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
     const span = document.createElement('span');
-    span.className = `log log-${level}`;
+    span.className   = `log log-${level}`;
     span.textContent = `[${ts}]  ${text}`;
     this._output.appendChild(span);
     this._output.appendChild(document.createElement('br'));
     this._output.scrollTop = this._output.scrollHeight;
+  }
+
+  protected teardown(): void {
+    if (this._autosaveTimer) clearTimeout(this._autosaveTimer);
+    this._view?.destroy();
   }
 }
 

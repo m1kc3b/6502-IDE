@@ -24,6 +24,7 @@ const STYLES = /* css */`
     box-shadow: var(--modal-shadow);
     width: 310px;
     min-height: 120px;
+    max-height: 80vh;
     z-index: 100;
     opacity: 0;
     pointer-events: none;
@@ -165,11 +166,15 @@ const STYLES = /* css */`
   .monitor-table td:last-child   { color: var(--amber); }
   .monitor-table tr:hover td     { background: var(--surface-3); }
 
-  /* Goto */
+  /* Goto — épinglé sous le body, toujours visible */
   .goto-row {
     display: flex;
     gap: 6px;
     align-items: center;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
   }
   .goto-row input {
     flex: 1;
@@ -220,6 +225,11 @@ const STYLES = /* css */`
 
 export class ChuckRegisters extends ChuckComponent {
   private _prev: Partial<CpuState> = {};
+  // Adresse affichée dans le moniteur — indépendante du PC
+  // Initialisée à $0000 (Zero Page), modifiable via le champ "Go"
+  private _monitorAddr = 0x0000;
+  // Cache des derniers octets lus
+  private _monitorBytes = new Uint8Array(16) as Uint8Array;
 
   protected render(): void {
     this.shadow.innerHTML = `<style>${STYLES}</style>
@@ -271,11 +281,11 @@ export class ChuckRegisters extends ChuckComponent {
           </td></tr>
         </tbody>
       </table>
+    </div>
 
-      <div class="goto-row">
-        <input type="text" id="goto-input" placeholder="$0600">
-        <button class="goto-btn" id="goto-btn">Go</button>
-      </div>
+    <div class="goto-row">
+      <input type="text" id="goto-input" placeholder="$0000 — adresse RAM">
+      <button class="goto-btn" id="goto-btn">Go</button>
     </div>
     <div class="resize-handle" id="resize"></div>`;
   }
@@ -288,14 +298,29 @@ export class ChuckRegisters extends ChuckComponent {
       .addEventListener('click', () => {
         const raw = (this.shadow.getElementById('goto-input') as HTMLInputElement).value.trim();
         let addr: number | null = null;
-        if (/^\$[0-9a-fA-F]+$/.test(raw))  addr = parseInt(raw.slice(1), 16);
+        if (/^\$[0-9a-fA-F]+$/.test(raw))   addr = parseInt(raw.slice(1), 16);
         else if (/^[0-9a-fA-F]+$/.test(raw)) addr = parseInt(raw, 16);
-        if (addr !== null) this.emit('chuck:goto', { address: addr });
+        else if (/^\d+$/.test(raw))           addr = parseInt(raw, 10);
+        if (addr !== null) {
+          this._monitorAddr = addr & 0xffff;
+          // Naviguer le PC du CPU
+          this.emit('chuck:goto', { address: this._monitorAddr });
+          // Rafraîchir le moniteur à la nouvelle adresse
+          this.updateMonitor();
+        }
       });
 
     this.sub('chuck:cpu-updated', (s) => this.updateRegs(s));
     this.sub('chuck:cpu-reset',   (s) => this.updateRegs(s));
     this.sub('chuck:cpu-halted',  (s) => this.updateRegs(s));
+
+    // Recevoir les données mémoire depuis Emulator
+    this.sub('chuck:memory-data', ({ address, bytes }) => {
+      if (address === this._monitorAddr) {
+        this._monitorBytes = new Uint8Array(bytes);
+        this._renderMonitor();
+      }
+    });
 
     makeDraggable(this, this.shadow.getElementById('bar')!);
     makeResizable(this, this.shadow.getElementById('resize')!);
@@ -321,7 +346,7 @@ export class ChuckRegisters extends ChuckComponent {
       this.shadow.getElementById(id)!.classList.toggle('set', (state.P & mask) !== 0);
     }
 
-    this.updateMonitor(state.PC);
+    this.updateMonitor();
     this._prev = { ...state };
 
     // Status bar PC
@@ -339,13 +364,19 @@ export class ChuckRegisters extends ChuckComponent {
     }
   }
 
-  private updateMonitor(startAddr: number): void {
-    const tbody = this.shadow.getElementById('monitor-body')!;
+  /** Demande une lecture mémoire à Emulator via le Bus */
+  private updateMonitor(): void {
+    this.emit('chuck:memory-read', { address: this._monitorAddr, length: 16 });
+  }
+
+  /** Rendu du tableau à partir du cache _monitorBytes */
+  private _renderMonitor(): void {
+    const tbody = this.shadow.getElementById('monitor-body');
+    if (!tbody) return;
     const rows: string[] = [];
-    for (let i = 0; i < 16; i++) {
-      const addr = (startAddr + i) & 0xffff;
-      // Lire via window.Memory si disponible
-      const v = (typeof Memory !== 'undefined') ? Memory.get(addr) : 0;
+    for (let i = 0; i < this._monitorBytes.length; i++) {
+      const addr = (this._monitorAddr + i) & 0xffff;
+      const v    = this._monitorBytes[i]!;
       rows.push(`<tr>
         <td>$${addr2hex(addr)}</td>
         <td>${v}</td>

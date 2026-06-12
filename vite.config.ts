@@ -12,4 +12,16 @@ export default defineConfig({
     port: 3000,
     open: true,
   },
-});
+  // ── Vitest ───────────────────────────────────────────────
+  test: {
+    globals:     true,
+    environment: 'jsdom',
+    include:     ['src/tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include:  ['src/core/**/*.ts'],
+      exclude:  ['src/core/emulator-bridge.ts'],
+    },
+  },
+} as any);

@@ -55,13 +55,27 @@ export interface ChuckEventMap {
 
   // ── UI state ────────────────────────────────────────────
   'chuck:toolbar-state': { state: ToolbarState };
+
+  // ── Mémoire — lecture à la demande ──────────────────────
+  /** Demander la lecture d'un bloc mémoire (émis par l'UI) */
+  'chuck:memory-read':   { address: number; length: number };
+  /** Réponse avec les données (émis par Emulator) */
+  'chuck:memory-data':   { address: number; bytes: Uint8Array };
+
+  // ── Défis (ChallengeManager) ─────────────────────────────
+  'chuck:challenge-loaded':  { challenge: import('../types/challenge.js').Challenge; code: string; fromStorage: boolean };
+  'chuck:challenge-success': { result:    import('../types/challenge.js').ValidationResult };
+  'chuck:challenge-failed':  { result:    import('../types/challenge.js').ValidationResult };
+  'chuck:validate':          { source: string };
+  'chuck:goto-challenge':    { id: number };
+  'chuck:autosave':          { id: number; code: string };
 }
 
 export type ChuckEventName = keyof ChuckEventMap;
 export type ToolbarState   = 'idle' | 'assembled' | 'running' | 'debugging';
 
 /* ── Bus singleton ───────────────────────────────────────────── */
-class EventBus {
+export class EventBus {
   private readonly target = new EventTarget();
 
   emit<K extends ChuckEventName>(

@@ -18,7 +18,7 @@
         <span class="tl-max"></span>
       </div>
       <span class="titlebar-logo">⬡ CHUCK IDE</span>
-      <span class="titlebar-file" id="titlebar-file">untitled.asm</span>
+      <span class="titlebar-file" id="titlebar-file">mode libre</span>
       <div class="titlebar-actions">
         <button class="titlebar-pill" id="btn-show-display" title="Écran">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -42,6 +42,13 @@
             <path d="M3 9h18M3 15h18M9 3v18"/>
           </svg>
           Mémoire
+        </button>
+        <button class="titlebar-pill" id="btn-show-challenge" title="Consigne du défi" style="color: var(--green)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          Défi
         </button>
       </div>
     </header>
@@ -79,9 +86,10 @@
   </div>
 
   <!-- ── Floating modals ─────────────────────────────────── -->
-  <chuck-display   id="modal-display"   style="top:80px; left:120px;"></chuck-display>
-  <chuck-registers id="modal-registers" style="top:80px; left:450px;"></chuck-registers>
-  <chuck-memory-dump id="modal-memory"  style="top:80px; left:800px;"></chuck-memory-dump>
+  <chuck-display   id="modal-display"    style="top:80px; left:120px;"></chuck-display>
+  <chuck-registers id="modal-registers"  style="top:80px; left:450px;"></chuck-registers>
+  <chuck-memory-dump id="modal-memory"   style="top:80px; left:800px;"></chuck-memory-dump>
+  <chuck-challenge-panel id="modal-challenge" style="top:80px; right:20px;"></chuck-challenge-panel>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

@@ -5,7 +5,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { ChuckComponent }          from '../core/base-component.js';
-import { bus, type ToolbarState }  from '../core/bus.js';
+import { type ToolbarState }  from '../core/bus.js';
 
 const STYLES = /* css */`
   @import '/src/styles/tokens.css';
@@ -214,6 +214,13 @@ export class ChuckToolbar extends ChuckComponent {
       ?.addEventListener('change', (e) => {
         const enabled = (e.target as HTMLInputElement).checked;
         this.emit('chuck:debug', { enabled });
+        // Mettre à jour l'état de la toolbar immédiatement :
+        // debug ON  → 'debugging'  (Étape actif, Run désactivé)
+        // debug OFF → 'assembled'  (Run actif, Étape désactivé)
+        // Seulement si on est déjà dans un état post-assemblage
+        if (['assembled', 'debugging'].includes(this._state)) {
+          this.applyState(enabled ? 'debugging' : 'assembled');
+        }
       });
 
     // Slider vitesse
@@ -229,7 +236,11 @@ export class ChuckToolbar extends ChuckComponent {
     this.sub('chuck:assembled',     () => this.applyState('assembled'));
     this.sub('chuck:assemble-err',  () => this.applyState('idle'));
     this.sub('chuck:cpu-reset',     () => this.applyState('idle'));
-    this.sub('chuck:cpu-halted',    () => this.applyState('assembled'));
+    this.sub('chuck:cpu-halted',    () => {
+      // Si le mode debug est encore coché, rester en debugging (pas en assembled)
+      const debugOn = (this.shadow.getElementById('chk-debug') as HTMLInputElement)?.checked;
+      this.applyState(debugOn ? 'debugging' : 'assembled');
+    });
     this.sub('chuck:code-changed',  () => this.applyState('idle'));
   }
 
@@ -266,7 +277,7 @@ export class ChuckToolbar extends ChuckComponent {
     const debugging  = state === 'debugging';
 
     this.setDisabled('assemble',    assembled);
-    this.setDisabled('run',         !assembled);
+    this.setDisabled('run',         !assembled || debugging);  // Run désactivé en debug
     this.setDisabled('step',        !debugging);
     this.setDisabled('reset',       !assembled);
     this.setDisabled('hexdump',     !assembled);
@@ -287,7 +298,6 @@ export class ChuckToolbar extends ChuckComponent {
       runSvg.innerHTML = `<polygon points="5,3 19,12 5,21" fill="currentColor"/>`;
     }
 
-    bus.emit('chuck:toolbar-state', { state });
   }
 
   private setDisabled(action: string, disabled: boolean): void {

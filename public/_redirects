@@ -1,0 +1,6 @@
+# ─────────────────────────────────────────────────────────────
+# Chuck IDE — public/_redirects
+# SPA fallback : toutes les routes inconnues → index.html
+# Nécessaire pour que ?challenge=X fonctionne après un refresh
+# ─────────────────────────────────────────────────────────────
+/*    /index.html    200

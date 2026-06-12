@@ -174,7 +174,6 @@ export class ChuckMemoryDump extends ChuckComponent {
   }
 
   protected setup(): void {
-    // Cache les cellules
     this._cells = Array.from({ length: 256 }, (_, i) =>
       this.shadow.getElementById(`cell-${i}`) as HTMLElement,
     );
@@ -182,18 +181,29 @@ export class ChuckMemoryDump extends ChuckComponent {
     this.shadow.getElementById('close')!
       .addEventListener('click', () => this.hide());
 
-    // Mise à jour à chaque cycle CPU
-    this.sub('chuck:cpu-updated', () => this.refresh());
-    this.sub('chuck:cpu-reset',   () => { this._prev.fill(0); this.refresh(); });
+    // Demander les 256 octets de la Zero Page via le Bus
+    this.sub('chuck:cpu-updated', () => this._requestZeroPage());
+    this.sub('chuck:cpu-reset',   () => {
+      this._prev.fill(0);
+      this._requestZeroPage();
+    });
+
+    // Recevoir les données et rafraîchir
+    this.sub('chuck:memory-data', ({ address, bytes }) => {
+      if (address === 0x0000) this._render(bytes);
+    });
 
     makeDraggable(this, this.shadow.getElementById('bar')!);
     makeResizable(this, this.shadow.getElementById('resize')!);
   }
 
-  private refresh(): void {
-    if (typeof Memory === 'undefined') return;
+  private _requestZeroPage(): void {
+    this.emit('chuck:memory-read', { address: 0x0000, length: 256 });
+  }
+
+  private _render(bytes: Uint8Array): void {
     for (let i = 0; i < 256; i++) {
-      const v    = Memory.get(i);
+      const v    = bytes[i]!;
       const cell = this._cells[i]!;
       const changed = v !== this._prev[i];
       this._prev[i] = v;

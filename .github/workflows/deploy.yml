@@ -1,0 +1,66 @@
+# ─────────────────────────────────────────────────────────────
+# Chuck IDE — .github/workflows/deploy.yml
+# Tâche 6.3 — CI/CD : build Vite + déploiement Cloudflare Pages
+#
+# Déclenchement :
+#   - push sur main          → déploiement production
+#   - pull_request sur main  → déploiement preview (URL unique par PR)
+#
+# Secrets GitHub requis (Settings → Secrets and variables → Actions) :
+#   CLOUDFLARE_API_TOKEN  : token CF avec permission "Cloudflare Pages: Edit"
+#   CLOUDFLARE_ACCOUNT_ID : Account ID trouvable sur le dashboard CF
+# ─────────────────────────────────────────────────────────────
+
+name: Deploy Chuck IDE → Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # ── Checkout ─────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Node.js ──────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── Install ───────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Type check ────────────────────────────────────────
+      - name: TypeScript type check
+        run: npm run typecheck
+
+      # ── Build ─────────────────────────────────────────────
+      - name: Build
+        run: npm run build
+
+      # ── Deploy → Cloudflare Pages ─────────────────────────
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: chuck-ide
+          directory:   dist
+          # Sur main → production ; sur PR → preview automatique
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref || github.ref_name }}

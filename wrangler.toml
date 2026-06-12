@@ -1,0 +1,14 @@
+# ─────────────────────────────────────────────────────────────
+# Chuck IDE — wrangler.toml
+# Tâche 6.3 — Configuration Cloudflare Pages
+# ─────────────────────────────────────────────────────────────
+
+name        = "chuck-ide"
+compatibility_date = "2024-09-23"
+
+[site]
+bucket = "./dist"
+
+# Pages project — commandes équivalentes au dashboard :
+#   wrangler pages project create chuck-ide
+#   wrangler pages deploy ./dist --project-name=chuck-ide
